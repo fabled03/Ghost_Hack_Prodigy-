@@ -1,11 +1,17 @@
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, Static, Input
+from textual.widgets import Header, Footer, Static, Input, RichLog
 from textual.containers import Container, Horizontal, Vertical
 from textual.reactive import reactive
 
-class Stage(Static):
-    """The visual game stage."""
-    pass
+ASCII_TITLE = r"""
+  ____ _               _   _   _            _    
+ / ___| |__   ___  ___| |_| | | | __ _  ___| | __
+| |  _| '_ \ / _ \/ __| __| |_| |/ _` |/ __| |/ /
+| |_| | | | | (_) \__ \ |_|  _  | (_| | (__|   < 
+ \____|_| |_|\___/|___/\__|_| |_|\__,_|\___|_|\_\
+ 
+ :: PRODIGY OS v0.6.7 :: UNAUTHORIZED ACCESS FATAL ::
+"""
 
 class Status(Static):
     """The status panel."""
@@ -14,14 +20,9 @@ class Status(Static):
 class VirusGame(App):
     """Terminal-based hacking containment game."""
     
-    # CSS styling to create the aesthetic and split screen
     CSS = """
-    Screen {
-        layout: vertical;
-    }
-    Horizontal {
-        height: 1fr;
-    }
+    Screen { layout: vertical; }
+    Horizontal { height: 1fr; }
     #left-stage {
         width: 50%;
         height: 100%;
@@ -42,11 +43,11 @@ class VirusGame(App):
         border: solid dodgerblue;
         background: #000000;
     }
-    Stage {
+    /* Updated Stage to target RichLog */
+    RichLog {
         padding: 1;
-        content-align: left top;
-        text-style: bold;
         color: lime;
+        text-style: bold;
     }
     Status {
         padding: 1;
@@ -60,87 +61,116 @@ class VirusGame(App):
     }
     """
 
-    # Adds a keyboard shortcut to quit safely
     BINDINGS = [("ctrl+c", "quit", "Quit")]
 
-    # Reactive variables automatically update the UI when changed
-    game_text = reactive("SYSTEM INITIALIZED...\nAwaiting commands.")
-    status_text = reactive("SYSTEM STATUS:\n\nCPU: 12%\nRAM: 2.1GB/16GB\nTHREAT LEVEL: NONE")
+    status_text = reactive("SYSTEM OFFLINE")
 
     def compose(self) -> ComposeResult:
-        """Builds the UI layout."""
         yield Header()
-        
         with Horizontal():
             with Container(id="left-stage"):
-                yield Stage(self.game_text, id="stage_view")
-            
+                # REPLACED Static with RichLog
+                yield RichLog(id="stage_view", markup=False)
             with Vertical(id="right-split"):
                 with Container(id="right-top"):
                     yield Status(self.status_text, id="status_view")
-                    
                 with Container(id="right-bottom"):
                     yield Input(placeholder="> root@system:~# ", id="command_input")
-            
         yield Footer()
 
     def on_mount(self) -> None:
-        """Fires exactly once when the game starts."""
-        self.query_one(Input).focus() # Auto focus the typing area
+        self.query_one(Input).focus()
         
-        # THIS IS THE GAME LOOP. 
-        self.tick_timer = self.set_interval(2.0, self.game_tick)
-
-    def game_tick(self) -> None:
-        """The background loop that updates the game world."""
-        # For now, it does nothing. We will add the virus spawning logic here.
-        pass
-
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        """Fires every time the player presses Enter."""
-        raw_input = event.value.strip().lower()
-        self.query_one(Input).value = "" # Instantly clear the input box
+        # Save a reference to the log so we can write to it easily
+        self.stage = self.query_one("#stage_view", RichLog)
         
-        if not raw_input:
-            return
-
-        # 1. Map text strings to class methods
-        command_map = {
+        self.command_map = {
             "clear": self.cmd_clear,
             "scan": self.cmd_scan,
             "help": self.cmd_help,
         }
 
-        # 2. Grab just the first word 
+        self.tutorial_step = 0
+        
+        self.stage.write("INITIALIZING BIOS...")
+        self.set_timer(1.0, self.boot_step_1)
+        self.set_timer(2.5, self.boot_step_2)
+        self.set_timer(4.5, self.boot_step_3)
+
+    # ==========================================
+    # BOOT SEQUENCE LOGIC
+    # ==========================================
+    def boot_step_1(self):
+        self.stage.write("\nLOADING KERNEL... [OK]\nMOUNTING DRIVES... [OK]")
+        self.status_text = "BOOTING..."
+        self.query_one("#status_view", Status).update(self.status_text)
+
+    def boot_step_2(self):
+        self.stage.clear()
+        self.stage.write(ASCII_TITLE)
+        self.stage.write("\nCONNECTION ESTABLISHED.")
+        self.status_text = "SYSTEM STATUS:\n\nCPU: 4%\nRAM: 1.2GB/16GB\nTHREAT LEVEL: UNKNOWN"
+        self.query_one("#status_view", Status).update(self.status_text)
+
+    def boot_step_3(self):
+        self.stage.write("\n[SYSTEM AI]: Greetings, Operator.")
+        self.stage.write("[SYSTEM AI]: We have a containment breach.")
+        self.stage.write("[SYSTEM AI]: Type 'help' and press Enter to view your modules.")
+        self.tutorial_step = 1 
+
+    # ==========================================
+    # INPUT PARSING
+    # ==========================================
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        raw_input = event.value.strip().lower()
+        self.query_one(Input).value = "" 
+        
+        if not raw_input: return
+
+        # Echo the player's command to the screen
+        self.stage.write(f"\n> root@system:~# {raw_input}")
+
         base_command = raw_input.split()[0]
 
-        # 3. Look up the command 
-        if base_command in command_map:
-            command_map[base_command]()
+        if base_command in self.command_map:
+            self.command_map[base_command]() 
         else:
             self.cmd_unknown(base_command)
             
-        # Push the updated text to the screens
-        self.query_one("#stage_view", Stage).update(self.game_text)
-        self.query_one("#status_view", Status).update(self.status_text)
-
     # ==========================================
-    # INDIVIDUAL COMMAND LOGIC
+    # COMMANDS
     # ==========================================
-
     def cmd_clear(self) -> None:
-        self.game_text = ""
+        self.stage.clear()
 
     def cmd_scan(self) -> None:
-        self.game_text += "\n> Scanning memory sectors... [ OK ]"
-        self.status_text = "SYSTEM STATUS:\n\nCPU: 89% [SCANNING]\nRAM: 4.5GB/16GB\nTHREAT LEVEL: SEARCHING..."
+        self.stage.write("> Scanning memory sectors... [ OK ]")
+        
+        # Fixed Tutorial Logic: Proceeds immediately if they are on step 2
+        if self.tutorial_step == 2:
+            self.stage.write("\n[SYSTEM AI]: Good. Data is collected.")
+            self.stage.write("[SYSTEM AI]: Get ready!!!")
+            self.tutorial_step = 3 
+            self.set_timer(2.0, self.start_main_game)
 
     def cmd_help(self) -> None:
-        self.game_text += "\n> Available commands: scan, clear, help"
+        available_commands = ", ".join(self.command_map.keys())
+        self.stage.write(f"> Available modules: [ {available_commands} ]")
+        
+        if self.tutorial_step == 1:
+            self.stage.write("\n[SYSTEM AI]: Excellent. Your first task is to locate the source.")
+            self.stage.write("[SYSTEM AI]: Type 'scan' to run a diagnostic.")
+            self.tutorial_step = 2 
 
     def cmd_unknown(self, command: str) -> None:
-        self.game_text += f"\n> COMMAND NOT RECOGNIZED: {command}"
+        self.stage.write(f"> COMMAND NOT RECOGNIZED: {command}")
 
+    # ==========================================
+    # MAIN GAME LOOP START
+    # ==========================================
+    def start_main_game(self) -> None:
+        self.stage.write("\n--- INFECTION DETECTED ---")
+        self.stage.write("> Hex Dump Initializing...")
 
 if __name__ == "__main__":
     app = VirusGame()
