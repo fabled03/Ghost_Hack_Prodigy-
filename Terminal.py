@@ -8,6 +8,7 @@ from textual import work
 
 from director import StoryDirector
 from Defend_gameplay import DefenseGame, FILES, HOME_FILES, ATTACKER_LINES, TRAP_LINES
+from Attack_gameplay import DataPipelineGame
 
 ASCII_TITLE = r"""
   ____ _               _   _   _            _    
@@ -56,6 +57,7 @@ class VirusGame(App):
         
         self.director = StoryDirector() 
         self.defense = DefenseGame()
+        self.pipeline = DataPipelineGame() 
 
         self.command_map = {
             "clear": self.cmd_clear,
@@ -70,6 +72,9 @@ class VirusGame(App):
             "encrypt": self.cmd_encrypt,
             "debug": self.cmd_debug,
             "delete": self.cmd_delete,
+            "rotate": self.cmd_rotate,      
+            "transmit": self.cmd_transmit,   
+            "pipeline": self.cmd_pipeline,  
         }
         
         self.update_status_display()
@@ -121,7 +126,7 @@ class VirusGame(App):
         base_command, parts_args = parts[0], parts[1:]
 
         if base_command in self.command_map:
-            if base_command in ["decode", "inspect", "encrypt", "debug", "delete"]:
+            if base_command in ["decode", "inspect", "encrypt", "debug", "delete", "rotate"]:
                 self.command_map[base_command](parts_args)
             elif base_command == "connect":
                 self.cmd_connect(parts_args)
@@ -166,15 +171,31 @@ class VirusGame(App):
         self.stage.write(">   encrypt <file>     deploy defense")
         self.stage.write(">   debug <file>       purge process")
         self.stage.write(">   delete <file>      purge target file")
+        self.stage.write(">   pipeline           launch data transmission override")
+
+    # --- PIPELINE ATTACK COMMANDS ---
+    def cmd_pipeline(self) -> None:
+        grid_view = self.pipeline.start_game()
+        self.stage.write(grid_view)
+
+    def cmd_rotate(self, args) -> None:
+        result = self.pipeline.rotate_pipe(args)
+        self.stage.write(result)
+
+    def cmd_transmit(self) -> None:
+        success, message = self.pipeline.check_transmission()
+        self.stage.write(message)
+        if success:
+            self.win()
 
     def start_main_game(self) -> None:
-        self.stage.write("\n--- INFECTION DETECTED ---")
-        self.stage.write("> Type 'files' for the infected directory, 'manual' for defense steps.")
-        self.defense.game_active = True
+        self.stage.write("\n--- ATTACK MINIGAME: DATA TRANSMISSION OVERRIDE ---")
+        self.stage.write("> The AI has locked your data pathways. Align the pipes using 'rotate <row> <col>' and 'transmit'.")
+        
+        grid_view = self.pipeline.start_game()
+        self.stage.write(grid_view)
+        
         self.update_status_display()
-        self.vitals_timer = self.set_interval(1.0, self.vitals_tick)
-        alert_msg = self.defense.launch_attack()
-        self.stage.write(alert_msg)
 
     def vitals_tick(self) -> None:
         crashed, msg = self.defense.tick()
@@ -296,6 +317,14 @@ class VirusGame(App):
             self.defense.end_attack()
         else:
             self.wrong_file_penalty(name)
+
+    def win(self) -> None:
+        if getattr(self, "vitals_timer", None):
+            self.vitals_timer.stop()
+        self.defense.game_active = False
+        self.stage.write("\n=== SOURCE LOCATED ===")
+        self.stage.write("[UNKNOWN]: No... how did you...")
+        self.query_one(Input).disabled = True
 
 if __name__ == "__main__":
     app = VirusGame()
