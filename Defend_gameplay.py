@@ -1,0 +1,405 @@
+import random
+from textual.widgets import Input
+
+# Each attack drives your vitals up every second.
+ATTACKS = [
+    {"name": "BRUTE FORCE",      "cpu": 6, "ram": 0.5, "bpm": 5},
+    {"name": "SQL INJECTION",    "cpu": 4, "ram": 0.9, "bpm": 6},
+    {"name": "DDOS FLOOD",       "cpu": 8, "ram": 0.6, "bpm": 7},
+    {"name": "PHISHING PAYLOAD", "cpu": 5, "ram": 0.7, "bpm": 4},
+]
+
+# --- SAFE FALLBACKS FOR DEFEND GAMEPLAY ---
+FILES = {
+    "sys_core.dat": {"safe": True, "result": "Core module verified."},
+    "anomaly.tmp": {"safe": False},
+    "lazarus_blueprint.enc": {"safe": True, "result": "Project Lazarus blueprint accessed.", "win": True}
+}
+HOME_FILES = ["kernel.dll", "svch0st.exe", "sys_log.txt", "update_tmp.dat"]
+ATTACKER_LINES = ["[UNKNOWN]: You can't lock me out forever.", "[UNKNOWN]: Firewall detected. Adapting."]
+TRAP_LINES = ["FATAL: Triggered a defense countermeasure!", "WARNING: Unauthorized access detected by core."]
+ATTACK_DEADLINE = 8
+PERM_CPU_HIT = 8
+PERM_RAM_HIT = 1.0
+MAX_BASE_CPU = 60
+MAX_BASE_RAM = 10
+
+def bar(value, maximum, width=10):
+    filled = int(width * min(value, maximum) / maximum)
+    return "#" * filled + "-" * (width - filled)
+# -------------------------------------------
+
+def bar(value, maximum, width=10):
+    filled = int(width * min(value, maximum) / maximum)
+    return "#" * filled + "-" * (width - filled)
+
+def on_mount(self) -> None:
+    self.query_one(Input).focus()
+    self.stage = self.query_one("#stage_view", RichLog)
+
+    # Commands with no arguments
+    self.command_map = {
+        "clear": self.cmd_clear,
+        "scan": self.cmd_scan,
+        "help": self.cmd_help,
+        "files": self.cmd_files,
+        "ls": self.cmd_ls,
+        "manual": self.cmd_manual,
+    }
+
+    # Commands that take a filename
+    self.arg_commands = {
+        "decode": self.cmd_decode,
+        "inspect": self.cmd_inspect,
+        "encrypt": self.cmd_encrypt,
+        "debug": self.cmd_debug,
+        "delete": self.cmd_delete,
+    }
+
+    self.tutorial_step = 0
+
+    # Vitals and permanent baselines
+    self.base_cpu = 4
+    self.base_ram = 1.2
+    self.cpu = self.base_cpu
+    self.ram = self.base_ram
+    self.bpm = 72
+
+    # Attack state
+    self.active_attack = None
+    self.infected_file = None
+    self.inspected = set()
+    self.attack_elapsed = 0
+    self.scarred = False
+    self.scars = 0
+    self.firewalls = 0
+    self.vitals_timer = None
+    self.game_active = False
+    self.decoded = set()
+    self.home_files = list(HOME_FILES)   # a copy, so delete can remove files
+
+    self.stage.write("INITIALIZING BIOS...")
+    self.set_timer(1.0, self.boot_step_1)
+    self.set_timer(2.5, self.boot_step_2)
+    self.set_timer(4.5, self.boot_step_3)
+
+# ==========================================
+# BOOT SEQUENCE LOGIC
+# ==========================================
+
+def on_input_submitted(self, event: Input.Submitted) -> None:
+    raw_input = event.value.strip().lower()
+    self.query_one(Input).value = ""
+    if not raw_input:
+        return
+
+    self.stage.write(f"\n> root@system:~# {raw_input}")
+
+    parts = raw_input.split()
+    base_command, args = parts[0], parts[1:]
+
+    if base_command in self.arg_commands:
+        self.arg_commands[base_command](args)
+    elif base_command in self.command_map:
+        self.command_map[base_command]()
+    else:
+        self.cmd_unknown(base_command)
+
+# ==========================================
+# BASIC COMMANDS
+# ==========================================
+def cmd_clear(self) -> None:
+    self.stage.clear()
+
+def cmd_scan(self) -> None:
+    self.stage.write("> Scanning memory sectors... [ OK ]")
+    if self.tutorial_step == 2:
+        self.stage.write("\n[SYSTEM AI]: Good. Data is collected.")
+        self.stage.write("[SYSTEM AI]: Get ready!!!")
+        self.tutorial_step = 3
+        self.set_timer(2.0, self.start_main_game)
+
+def cmd_help(self) -> None:
+    available = list(self.command_map.keys()) + list(self.arg_commands.keys())
+    self.stage.write(f"> Available modules: [ {', '.join(available)} ]")
+    if self.tutorial_step == 1:
+        self.stage.write("\n[SYSTEM AI]: Excellent. Your first task is to locate the source.")
+        self.stage.write("[SYSTEM AI]: Type 'scan' to run a diagnostic.")
+        self.tutorial_step = 2
+
+def cmd_unknown(self, command: str) -> None:
+    self.stage.write(f"> COMMAND NOT RECOGNIZED: {command}")
+
+def cmd_manual(self) -> None:
+    self.stage.write("> DEFENSE MANUAL:")
+    self.stage.write(">   files             list the infected directory")
+    self.stage.write(">   decode <file>     decode a file (careful: some are traps)")
+    self.stage.write(">   ls                list your own directory")
+    self.stage.write(">   inspect <file>    check a file for the infection")
+    self.stage.write(">   encrypt <file>    stop it AI will not be able to acess information but takes time.")
+    self.stage.write(">   debug <file>      stop it, will not lose the file, but takes time.")
+    self.stage.write(">   delete <file>     stop it instantly, but the file is lost forever")
+    self.stage.write(f">   Act within {ATTACK_DEADLINE}s or the damage becomes permanent.")
+
+# ==========================================
+# MAIN GAME START
+# ==========================================
+def start_main_game(self) -> None:
+    self.stage.write("\n--- INFECTION DETECTED ---")
+    self.stage.write("> Type 'files' for the infected directory, 'manual' for defense steps.")
+    self.game_active = True
+    self.update_status()
+    self.vitals_timer = self.set_interval(1.0, self.vitals_tick)
+
+# ==========================================
+# STATUS PANEL
+# ==========================================
+def update_status(self) -> None:
+    threat = self.active_attack["name"] if self.active_attack else "NONE"
+    lines = [
+        "SYSTEM STATUS:\n",
+        f"CPU:   [{bar(self.cpu, 100)}] {int(self.cpu)}%",
+        f"RAM:   [{bar(self.ram, 16)}] {self.ram:.1f}/16GB",
+        f"HEART: [{bar(self.bpm, 180)}] {int(self.bpm)} BPM\n",
+        f"THREAT: {threat}",
+        f"FIREWALLS: {self.firewalls}",
+        f"PERMANENT DAMAGE: {self.scars}",
+        f"BASELINE: {int(self.base_cpu)}% / {self.base_ram:.1f}GB",
+    ]
+    if self.active_attack and not self.scarred:
+        left = max(0, ATTACK_DEADLINE - self.attack_elapsed)
+        lines.append(f"\nINFECTION TAKES ROOT IN: {left}s")
+    elif self.active_attack and self.scarred:
+        lines.append("\n!! INFECTION ROOTED !!")
+    self.status_text = "\n".join(lines)
+    self.query_one("#status_view", Status).update(self.status_text)
+
+# ==========================================
+# VITALS LOOP (runs every second)
+# ==========================================
+def vitals_tick(self) -> None:
+    if not self.game_active:
+        return
+
+    if self.active_attack:
+        a = self.active_attack
+        scale = 0.85 ** self.firewalls   # each firewall slows the climb
+        old_cpu = self.cpu
+        self.cpu = min(100, self.cpu + a["cpu"] * scale)
+        self.ram = min(16, self.ram + a["ram"] * scale)
+        self.bpm = min(200, self.bpm + a["bpm"] * scale)
+
+        self.attack_elapsed += 1
+        remaining = ATTACK_DEADLINE - self.attack_elapsed
+        if not self.scarred:
+            if remaining == 4:
+                self.stage.write("\n> WARNING: infection is digging in. Act now.")
+            if remaining <= 0:
+                self.apply_permanent_damage()
+
+        if old_cpu < 70 <= self.cpu:
+            self.stage.write("\n!!! WARNING: CPU CRITICAL. YOUR PULSE IS RACING. !!!")
+
+        if self.check_crash():
+            return
+    else:
+        # settle back toward the (possibly higher) baseline
+        self.cpu = max(self.base_cpu, self.cpu - 3)
+        self.ram = max(self.base_ram, self.ram - 0.3)
+        self.bpm = max(72, self.bpm - 4)
+
+    self.update_status()
+
+def check_crash(self) -> bool:
+    if self.cpu >= 100 or self.ram >= 16 or self.bpm >= 180:
+        self.system_crash()
+        return True
+    return False
+
+def apply_permanent_damage(self) -> None:
+    self.scarred = True
+    self.scars += 1
+    self.base_cpu = min(MAX_BASE_CPU, self.base_cpu + PERM_CPU_HIT)
+    self.base_ram = min(MAX_BASE_RAM, self.base_ram + PERM_RAM_HIT)
+    self.stage.write("\n!!! THE INFECTION TAKES ROOT !!!")
+    self.stage.write("> Permanent damage: your resting CPU and RAM usage have increased.")
+    self.stage.write("[UNKNOWN]: That one's going to leave a mark.")
+
+# ==========================================
+# ATTACK LIFECYCLE
+# ==========================================
+def launch_attack(self) -> None:
+    if not self.game_active:
+        return
+    if not self.home_files:
+        self.home_files = list(HOME_FILES)
+    self.active_attack = random.choice(ATTACKS)
+    self.infected_file = random.choice(self.home_files)
+    self.inspected = set()
+    self.attack_elapsed = 0
+    self.scarred = False
+    self.stage.write(f"\n!!! ALERT: {self.active_attack['name']} !!!")
+    self.stage.write("> A process is feeding on your system. CPU, RAM and pulse are climbing.")
+    self.stage.write(f"> Neutralize it within {ATTACK_DEADLINE}s or the damage becomes permanent.")
+    self.stage.write("> Use: ls, inspect <file>, then encrypt, debug or delete <file>")
+    self.update_status()
+
+def end_attack(self) -> None:
+    self.active_attack = None
+    self.infected_file = None
+    self.attack_elapsed = 0
+    self.scarred = False
+    self.update_status()
+
+def defend_success(self) -> None:
+    self.firewalls += 1
+    self.stage.write(f"> Encryption complete. Firewall #{self.firewalls} online.")
+    self.stage.write(random.choice(ATTACKER_LINES))
+    self.end_attack()
+
+def stop_vitals(self) -> None:
+    if self.vitals_timer:
+        self.vitals_timer.stop()
+
+def system_crash(self) -> None:
+    self.game_active = False
+    self.stop_vitals()
+    self.update_status()
+    self.stage.write("\n=== SYSTEM OVERLOAD. FLATLINE. ===")
+    self.stage.write("[UNKNOWN]: I'm in.")
+    self.query_one(Input).disabled = True
+
+def win(self) -> None:
+    self.stop_vitals()
+    self.game_active = False
+    self.stage.write("\n=== SOURCE LOCATED ===")
+    self.stage.write("[UNKNOWN]: No... how did you...")
+    self.query_one(Input).disabled = True
+
+# ==========================================
+# INFECTED DIRECTORY (files / decode)
+# ==========================================
+def cmd_files(self) -> None:
+    if not self.game_active:
+        self.stage.write("> No file access yet.")
+        return
+    self.stage.write("> Infected directory:")
+    for name in FILES:
+        mark = " (decoded)" if name in self.decoded else ""
+        self.stage.write(f">   {name}{mark}")
+    self.stage.write("> Use: decode <filename>")
+
+def cmd_decode(self, args) -> None:
+    if not self.game_active:
+        self.stage.write("> Nothing to decode yet.")
+        return
+    if self.active_attack:
+        self.stage.write("> Under attack! Defend first.")
+        return
+    if not args:
+        self.stage.write("> Usage: decode <filename>")
+        return
+
+    name = args[0]
+    if name not in FILES:
+        self.stage.write(f"> File not found: {name}")
+        return
+    if name in self.decoded:
+        self.stage.write("> Already decoded.")
+        return
+
+    self.decoded.add(name)
+    self.stage.write(f"> Decoding {name}...")
+    f = FILES[name]
+
+    if f["safe"]:
+        self.stage.write(f"> {f['result']}")
+        if f.get("win"):
+            self.win()
+    else:
+        self.stage.write(random.choice(TRAP_LINES))
+        self.launch_attack()
+
+# ==========================================
+# DEFENSE COMMANDS (your own directory)
+# ==========================================
+def cmd_ls(self) -> None:
+    if not self.game_active:
+        self.stage.write("> No directory access yet.")
+        return
+    self.stage.write("> /home/operator:")
+    for name in self.home_files:
+        mark = " [inspected]" if name in self.inspected else ""
+        self.stage.write(f">   {name}{mark}")
+
+def pick_file(self, args, verb):
+    """Shared check: returns a valid filename, or None after printing why not."""
+    if not self.active_attack:
+        self.stage.write(f"> No active threat. Nothing to {verb}.")
+        return None
+    if not args or args[0] not in self.home_files:
+        self.stage.write(f"> Usage: {verb} <filename> (see 'ls')")
+        return None
+    return args[0]
+
+def wrong_file_penalty(self, name) -> None:
+    self.cpu = min(100, self.cpu + 15)
+    self.ram = min(16, self.ram + 1.5)
+    self.bpm = min(200, self.bpm + 15)
+    self.stage.write(f"> {name} was clean. The attacker is still inside.")
+    self.stage.write("[UNKNOWN]: Wasting time? Good.")
+    if not self.check_crash():
+        self.update_status()
+
+def cmd_inspect(self, args) -> None:
+    name = self.pick_file(args, "inspect")
+    if not name:
+        return
+    self.inspected.add(name)
+    if name == self.infected_file:
+        self.stage.write(f"> {name}: HIDDEN PROCESS. Outbound traffic to unknown host.")
+        self.stage.write("> This is the infection source.")
+    else:
+        self.stage.write(f"> {name}: clean. No anomalies.")
+
+def cmd_encrypt(self, args) -> None:
+    name = self.pick_file(args, "encrypt")
+    if not name:
+        return
+    self.stage.write(f"> Encrypting {name}...")
+    if name == self.infected_file:
+        self.defend_success()
+    else:
+        self.wrong_file_penalty(name)
+
+def cmd_debug(self, args) -> None:
+    name = self.pick_file(args, "debug")
+    if not name:
+        return
+    self.stage.write(f"> Debugging {name}...")
+    if name != self.infected_file:
+        self.wrong_file_penalty(name)
+        return
+    self.stage.write("> Malicious process killed.")
+    if self.scars > 0:
+        self.scars -= 1
+        self.base_cpu = max(4, self.base_cpu - PERM_CPU_HIT)
+        self.base_ram = max(1.2, self.base_ram - PERM_RAM_HIT)
+        self.stage.write("> Memory repaired. One point of permanent damage removed.")
+    else:
+        self.stage.write("> No permanent damage to repair.")
+    self.cpu = min(100, self.cpu + 10)   # the debugger itself is heavy
+    self.end_attack()
+    self.check_crash()
+
+def cmd_delete(self, args) -> None:
+    name = self.pick_file(args, "delete")
+    if not name:
+        return
+    self.home_files.remove(name)
+    self.stage.write(f"> {name} deleted permanently.")
+    if name == self.infected_file:
+        self.stage.write("> Infection source destroyed. No firewall gained.")
+        self.end_attack()
+    else:
+        self.wrong_file_penalty(name)
