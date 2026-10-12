@@ -1,5 +1,4 @@
 import random
-
 # Each attack drives your vitals up every second.
 ATTACKS = [
     {"name": "BRUTE FORCE",      "cpu": 6, "ram": 0.5, "bpm": 5},
