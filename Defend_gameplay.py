@@ -46,10 +46,26 @@ class DefenseGame:
         self.decoded = set()
         self.home_files = list(HOME_FILES)
 
-    def tick(self) -> tuple[bool, str | None]:
-        """Processes a second of gameplay. Returns (crashed, message)."""
-        if not self.game_active:
-            return False, None
+    def check_takeover(self) -> bool:
+        """Every deleted file feeds the AI. Too many and it takes over."""
+        lost = len(self.files.deleted)
+        left = LOST_FILE_LIMIT - lost
+        if left > 0:
+            if lost >= 2:
+                self.write(f"> WARNING: {lost} files lost. The AI is learning from the gaps. "
+                        f"{left} more and it takes over.")
+            return False
+        self.takeover()
+        return True
+    
+    def takeover(self) -> None:
+        self.running = False
+        self.refresh()
+        self.write("\n=== TOO MANY FILES LOST ===")
+        self.write("> The mainframe has nothing left to protect you with.")
+        self.write("> Your terminal is no longer responding to you.")
+        self.write("[UNKNOWN]: Thank you. I'll take it from here, Operator.")
+        self.on_crash()
 
         msg = None
         if self.active_attack:
