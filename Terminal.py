@@ -118,8 +118,14 @@ class VirusGame(App):
         
         # Start the narrative boot sequence with animations
         self.query_one("#status_view", Status).update(self.director.get_status_text())
+        self.set_interval(1.0, self.refresh_status_display)
         self.set_timer(1.0, self.boot_step_1)
         self.set_timer(3.5, self.boot_step_2)
+
+    def refresh_status_display(self) -> None:
+        """Pulls the latest status text (with the pulsing heart) and pushes it to the UI."""
+        self.query_one("#status_view", Status).update(self.director.get_status_text())
+        
 
     # ==========================================
     # ANIMATION WORKER

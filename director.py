@@ -8,14 +8,22 @@ class StoryDirector:
         self.ram_used = 0.4
         self.ram_total = 16.0
         self.username = getpass.getuser().upper()
-        
+
+        self.heart_pulse = False
+
         # Narrative State
         self.tutorial_step = 0
         
     def get_status_text(self) -> str:
-        """Returns the formatted status text for the top-right panel."""
-        hb_display = "FLATLINE" if self.heartbeat == 0 else f"{self.heartbeat} BPM"
+        """Returns the formatted status text with a flashing heart emoji."""
+        self.heart_pulse = not self.heart_pulse  # Toggle state every second
         
+        if self.heartbeat == 0:
+            hb_display = "FLATLINE [ ♡ ]"
+        else:
+            heart_icon = "♥" if self.heart_pulse else "♡"
+            hb_display = f"{self.heartbeat} BPM [ {heart_icon} ]"
+
         return (
             f"NEURAL SYNC STATUS:\n\n"
             f"CPU (CORTEX): {self.cpu}%\n"
