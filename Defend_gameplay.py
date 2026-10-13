@@ -1,23 +1,41 @@
 import random
+from User_file_tree import USER_TREE
+
+def get_random_directory_files(tree):
+    folders = []
+    def collect(d):
+        for k, v in d.items():
+            if isinstance(v, dict):
+                # Check if this folder contains direct file items
+                if any(isinstance(sub_v, dict) and sub_v.get("type") == "file" for sub_v in v.values()):
+                    folders.append((k, v))
+                collect(v)
+    collect(tree)
+    
+    if not folders:
+        return "root", ["kernel.dll", "sys_log.txt"]
+    
+    chosen_name, chosen_dict = random.choice(folders)
+    files = [k for k, v in chosen_dict.items() if isinstance(v, dict) and v.get("type") == "file"]
+    return chosen_name, files
 
 ATTACKS = [
-    {"name": "BRUTE FORCE",      "cpu": 6, "ram": 0.5, "bpm": 5},
-    {"name": "SQL INJECTION",    "cpu": 4, "ram": 0.9, "bpm": 6},
-    {"name": "DDOS FLOOD",       "cpu": 8, "ram": 0.6, "bpm": 7},
-    {"name": "PHISHING PAYLOAD", "cpu": 5, "ram": 0.7, "bpm": 4},
+    {"name": "BRUTE FORCE",      "cpu": 0.8, "ram": 0.05, "bpm": 1.0},
+    {"name": "SQL INJECTION",    "cpu": 0.5, "ram": 0.1,  "bpm": 1.2},
+    {"name": "DDOS FLOOD",       "cpu": 1.2, "ram": 0.08, "bpm": 1.5},
+    {"name": "PHISHING PAYLOAD", "cpu": 0.6, "ram": 0.08, "bpm": 0.8},
 ]
 
-HOME_FILES = ["kernel.dll", "svch0st.exe", "sys_log.txt", "update_tmp.dat"]
 ATTACKER_LINES = ["[UNKNOWN]: You can't lock me out forever.", "[UNKNOWN]: Firewall detected. Adapting."]
 TRAP_LINES = ["FATAL: Triggered a defense countermeasure!", "WARNING: Unauthorized access detected by core."]
-PRESSURE = 0.22          # global multiplier on how fast vitals climb
-INITIAL_INFECTED = 2     # files infected when an attack starts
-MAX_INFECTED = 3         # the infection never spreads beyond this many at once
-SPREAD_EVERY = 20        # seconds between new infections while the attack lasts
-ATTACK_DEADLINE = 10     # seconds before the infection takes root
-PERM_CPU_HIT = 8         # permanent CPU baseline increase
-PERM_RAM_HIT = 1.0       # permanent RAM baseline increase (GB)
-LOST_FILE_LIMIT = 5      # delete this many files and the AI takes over
+PRESSURE = 0.10          
+INITIAL_INFECTED = 2     
+MAX_INFECTED = 3         
+SPREAD_EVERY = 20        
+ATTACK_DEADLINE = 35     
+PERM_CPU_HIT = 2         
+PERM_RAM_HIT = 0.1       
+LOST_FILE_LIMIT = 5      
 MAX_BASE_CPU = 98
 MAX_BASE_RAM = 15
 BASE_CPU = 4
@@ -46,10 +64,14 @@ class DefenseGame:
         self.firewalls = 0
         self.game_active = False
         self.decoded = set()
-        self.home_files = list(HOME_FILES)
+        
+        # Pick a random single directory from the tree for this session
+        folder_name, file_list = get_random_directory_files(USER_TREE)
+        self.current_folder_name = folder_name
+        self.home_files = list(file_list)
+        self.backup_files = list(file_list)
 
     def check_takeover(self) -> bool:
-        """Every deleted file feeds the AI. Too many and it takes over."""
         lost = len(self.files.deleted)
         left = LOST_FILE_LIMIT - lost
         if left > 0:
@@ -69,7 +91,8 @@ class DefenseGame:
         self.write("[UNKNOWN]: Thank you. I'll take it from here, Operator.")
         self.on_crash()
 
-        msg = None
+    def tick(self) -> tuple[bool, str]:
+        msg = ""
         if self.active_attack:
             a = self.active_attack
             scale = 0.85 ** self.firewalls
@@ -107,7 +130,7 @@ class DefenseGame:
 
     def launch_attack(self) -> str:
         if not self.home_files:
-            self.home_files = list(HOME_FILES)
+            self.home_files = list(self.backup_files)
         self.active_attack = random.choice(ATTACKS)
         self.infected_file = random.choice(self.home_files)
         self.inspected = set()

@@ -12,7 +12,7 @@
 # "info" text is shown when the player runs `inspect`. The story text below is
 # placeholder, so rewrite it however you like. Folders can be nested as deeply
 # as you want.
-From ascii_art import Takeover, Daughter, Appartment, Together, Smile
+from ASCII_Art import Takeover, Daughter, Appartment, Together, Smile
 
 USER_TREE = {
     "documents": {
