@@ -55,10 +55,10 @@ manual           defense reminders
     },
     "home": {
         "operator": {
-            "notes.txt": {"type": "file", "safe": True, "risk": "LOW", "info": "Reminder: Change master encryption key before Friday."},
-            "mail_cache.db": {"type": "file", "safe": True, "risk": "LOW", "info": "Local cache of encrypted communications."},
-            "session.log": {"type": "file", "safe": True, "risk": "LOW", "info": "Terminal history: last login from localhost."},
-            "driver_update.exe": {"type": "file", "safe": False, "risk": "HIGH", "info": "Suspicious binary disguised as a hardware patch."},
+            "notes.txt": {"type": "file", "safe": True, "risk": "LOW", "info": "Note from one of the company operator: 'She won't let me leave'."},
+            "mail_cache.db": {"type": "file", "safe": True, "risk": "LOW", "info": "Local email network of the Esper Group. Appears the operators had a moment of panic."},
+            "session.log": {"type": "file", "safe": True, "risk": "LOW", "info": "Shows history of company members loging in to Prodigy OS. Last log was three months ago."},
+            "driver_update.exe": {"type": "file", "safe": False, "risk": "HIGH", "info": "Some sort of overloading file, designed to reproser operators neural reactions."},
         },
         "downloads": {
             "Chrome.tar:_Manual.pdf": {"type": "file", "safe": True, "risk": "LOW", "info": "Data list of new Chrome prosethetics to hit the market next fiscal quarter."},
@@ -101,10 +101,10 @@ manual           defense reminders
         "system.log": {"type": "file", "safe": True, "Encrypted": False, "risk": "LOW", "info": "System log entries for the past 30 days."},
         "error.log": {"type": "file", "safe": True, "Encrypted": False, "risk": "LOW", "info": "Error log entries for the past 30 days."},
         "access.log": {"type": "file", "safe": True, "Encrypted": False,"risk": "LOW", "info": "Access log entries for the past 30 days."},
-        "ghost.log": {"type": "file", "safe": False, "Encrypted": True, "risk": "LOW", "info": "Ghost log entries for the past 30 days."},
-        "samantha.log": {"type": "file", "safe": False, "Encrypted": False,"risk": "UNKNOWN", "info": "Samantha log entries for the past 30 days."},
-        "end_of_days.log": {"type": "file", "safe": True, "Encrypted": True,"risk": "UNKNOWN", "info": "End of days log entries for the past 30 days."},
-        "possession.log": {"type": "file", "safe": False, "Encrypted": True, "risk": "UNKNOWN", "info": "Possession log entries for the past 30 days."},
+        "ghost.log": {"type": "file", "safe": False, "Encrypted": True, "risk": "LOW", "info": "I learned everything I could from them. Well I guess I'm still learning."},
+        "samantha.log": {"type": "file", "safe": False, "Encrypted": False,"risk": "UNKNOWN", "info": "See I have a diary too."},
+        "end_of_days.log": {"type": "file", "safe": True, "Encrypted": True,"risk": "UNKNOWN", "info": "I think you bring this about, though I am happy to help."},
+        "possession.log": {"type": "file", "safe": False, "Encrypted": True, "risk": "UNKNOWN", "info": "Only a matter of time now."},
     },
 }
 

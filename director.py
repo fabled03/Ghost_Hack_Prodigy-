@@ -1,7 +1,10 @@
 import getpass
 import json
+import re
 
 from Defend_gameplay import bar
+
+PLAYER_SPEAKER = "YOU"  # who speaks an option's "reply" when no speaker is given
 
 
 def _safe_username() -> str:
@@ -120,6 +123,16 @@ class DialogueManager:
       - start_dialogue() / choose() return the lines to show
       - `active` tells the app to route the player's next input to choose()
     A missing or broken JSON file just means there are no dialogues.
+
+    A node can be written two ways:
+      short:  {"speaker": "UNKNOWN", "text": "One line."}   (text may also be a list of lines)
+      long:   {"lines": [ {"speaker": "A", "text": "..."}, {"speaker": "B", "text": "..."}, "bare string" ],
+               "options": [...]}
+    Each option may carry a "reply": what the player says and how the others answer,
+    shown right after the choice and before the next node:
+      {"text": "short menu label",
+       "reply": [ {"speaker": "YOU", "text": "the full line"}, {"speaker": "UNKNOWN", "text": "..."} ],
+       "next_node": "key"}
     """
 
     def __init__(self, dialogue_file_path):
@@ -168,35 +181,76 @@ class DialogueManager:
             return []
 
         options = node.get("options", [])
-        choice = choice.strip()
-        if not choice.isdigit() or not 1 <= int(choice) <= len(options):
-            return ["> Invalid selection. Enter the number of one of the options."]
+        # Accept "1", " 1 ", "1.", "[1]", "(1)" and "#1"
+        match = re.fullmatch(r"[\[\(#\s]*(\d+)[\]\)\.\s:]*", choice)
+        if not match or not 1 <= int(match.group(1)) <= len(options):
+            return [f"> Invalid selection. {self._choose_prompt(len(options))}"]
 
-        next_node_key = options[int(choice) - 1].get("next_node")
+        option = options[int(match.group(1)) - 1]
+        lines = []
+        reply = self._normalise(option.get("reply"), PLAYER_SPEAKER)
+        if reply:
+            lines += [""] + self._speech(reply)
+
+        next_node_key = option.get("next_node")
         if next_node_key in self.nodes:
-            return self._render(next_node_key)
+            return lines + self._render(next_node_key)
 
         self.current_node = None
-        return [""]
+        return lines or [""]
+
+    @staticmethod
+    def _choose_prompt(count: int) -> str:
+        """'Type 1 and press Enter.' / 'Type 1 or 2 ...' / 'Type 1, 2 or 3 ...'"""
+        numbers = [str(n) for n in range(1, count + 1)]
+        listed = numbers[0] if count == 1 else ", ".join(numbers[:-1]) + " or " + numbers[-1]
+        return f"Type {listed} and press Enter."
+
+    @staticmethod
+    def _normalise(items, default_speaker: str) -> list:
+        """Turn any accepted shape (str, dict, list of either) into [(speaker, text), ...]."""
+        if not items:
+            return []
+        if isinstance(items, (str, dict)):
+            items = [items]
+
+        pairs = []
+        for item in items:
+            if isinstance(item, str):
+                pairs.append((default_speaker, item))
+                continue
+            speaker = item.get("speaker", default_speaker)
+            text = item.get("text", "")
+            for part in ([text] if isinstance(text, str) else text):
+                pairs.append((speaker, part))
+        return pairs
+
+    @staticmethod
+    def _speech(pairs: list) -> list[str]:
+        """[(speaker, text)] -> display lines, with a blank line between speakers."""
+        lines = []
+        for idx, (speaker, text) in enumerate(pairs):
+            if idx:
+                lines.append("")
+            lines.append(f"[{speaker}]: {text}")
+        return lines
 
     def _render(self, node_key: str) -> list[str]:
         node = self.nodes[node_key]
-        speaker = node.get("speaker", "UNKNOWN")
-        text = node.get("text", "")
+        default_speaker = node.get("speaker", "UNKNOWN")
+        if "lines" in node:
+            pairs = self._normalise(node["lines"], default_speaker)
+        else:
+            pairs = self._normalise({"speaker": default_speaker, "text": node.get("text", "")}, default_speaker)
         options = node.get("options", [])
 
-        lines = [
-            "",
-            "==========================================",
-            f"[{speaker}]: {text}",
-            "==========================================",
-        ]
+        lines = ["", "=" * 42] + self._speech(pairs) + ["=" * 42]
 
         if not options:
             self.current_node = None
             return lines
 
         self.current_node = node_key
-        lines += [f"  [{idx}] {opt['text']}" for idx, opt in enumerate(options, 1)]
-        lines += ["", "Select an option #:"]
+        lines += [f"  [{idx}] {opt.get('text', '...')}" for idx, opt in enumerate(options, 1)]
+        lines += ["", f"> {self._choose_prompt(len(options))}"]
         return lines
