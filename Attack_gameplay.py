@@ -1,5 +1,5 @@
 import random
-from rich.text import Text
+from rich.text import Text 
 
 PIPES = ['═', '║', '╔', '╗', '╚', '╝', '╠', '╣', '╦', '╩', '╬']
 
@@ -24,6 +24,45 @@ CONNECTIONS = {
     '╩': (True, True, False, True),
     '╬': (True, True, True, True),
 }
+
+def check_file_access(sys_fs, filename, game_session=None):
+    """
+    Checks the file encryption. If encrypted, initializes and returns 
+    the DataPipelineGame session required to decrypt/access the file.
+    """
+    if filename not in sys_fs:
+        return {"status": "error", "message": f"File '{filename}' not found in the system."}
+    
+    file_data = sys_fs[filename]
+    is_encrypted = file_data.get("Encrypted", False)
+    
+    print(f"\n--- ACCESS ATTEMPT: {filename} ---")
+    print(f"System Info: {file_data.get('info')}")
+    print(f"Risk Level: {file_data.get('risk')}")
+    
+    if is_encrypted:
+        print("[!] ACCESS DENIED: File is ENCRYPTED.")
+        print("[!] Initiating Data Breach...")
+        
+        # Create a new game instance if one isn't provided
+        game = game_session or DataPipelineGame(size=5)
+        initial_board = game.start_game()
+        
+        return {
+            "status": "encrypted",
+            "action": "trigger_minigame",
+            "file": filename,
+            "risk": file_data.get("risk"),
+            "game_instance": game,
+            "display": initial_board
+        }
+    else:
+        print("[+] ACCESS GRANTED: File is unencrypted.")
+        return {
+            "status": "decrypted",
+            "action": "open_file",
+            "file": filename
+        }
 
 class DataPipelineGame:
     def __init__(self, size=5):

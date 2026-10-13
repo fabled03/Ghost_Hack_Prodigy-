@@ -77,34 +77,34 @@ manual          defense reminders
         },
     },
     "sys": {
-        "kernel_log.enc": {"type": "file", "safe": True, "risk": "NONE", "info": "Log entry: unknown login from 'GHOST' corrupted time 'corrupted', intention 'corrupted'."},
-        "payroll.dat": {"type": "file", "safe": True, "risk": "NONE", "info": "Payroll records. Only shows up to middle managment. Upper managment records are not listed."},
-        "backup_final.bin": {"type": "file", "safe": False, "risk": "CRITICAL", "info": "Use only after sucesssful reboot."},
-        "security.enc": {"type": "file", "safe": False, "risk": "CRITICAL", "info": "List of security codes used to access the Prodigy OS core."},
-        "samantha.rogue": {"type": "file", "safe": True, "win": True, "risk": "NONE", "info": "My name? "},
-        "ghost_signal.tru": {"type": "file", "safe": True, "risk": "NONE", "info": "Trusted signal from GHOST_'corrupted'. Intentions: 'corrupted'"},
-        "bradcast.sig": {"type": "file", "safe": True, "risk": "NONE", "info": "Encrypted broadcast signal from Esper Group."},
+        "kernel_log.enc": {"type": "file", "safe": True, "Encrypted": False,"risk": "NONE", "info": "Log entry: unknown login from 'GHOST' corrupted time 'corrupted', intention 'corrupted'."},
+        "payroll.dat": {"type": "file", "safe": True, "Encrypted": False,"risk": "NONE", "info": "Payroll records. Only shows up to middle managment. Upper managment records are not listed."},
+        "backup_final.bin": {"type": "file", "safe": False, "Encrypted": True,"risk": "CRITICAL", "info": "Use only after sucesssful reboot."},
+        "security.enc": {"type": "file", "safe": False, "Encrypted": True, "risk": "CRITICAL", "info": "List of security codes used to access the Prodigy OS core."},
+        "samantha.rogue": {"type": "file", "safe": True, "Encrypted": True, "risk": "NONE", "info": "My name? "},
+        "ghost_signal.tru": {"type": "file", "safe": False,"Encrypted": False, "risk": "HIGH", "info": "Trusted signal from GHOST_'corrupted'. Intentions: 'corrupted'"},
+        "bradcast.sig": {"type": "file", "safe": True, "Encrypted": False,"risk": "NONE", "info": "Encrypted broadcast signal from Esper Group."},
     },
     "medical": {
-        "patient_records.enc": {"type": "file", "safe": True, "risk": "LOW", "info": "Terminal Chrome leakage causing spinal failure. So they told me."},
-        "research_data.bin": {"type": "file", "safe": True, "risk": "LOW", "info": "Trail 34 of the Prodigy Project. Subject WILL NOT SURVIVE."},
-        "virus_sample.dat": {"type": "file", "safe": False, "risk": "HIGH", "info": "Sample of Prodigy Virus successfully extracted from patient. Uploaded to mainframe"},
-        "quarantine.log": {"type": "file", "safe": True, "risk": "LOW", "info": "I escaped..."},
+        "patient_records.enc": {"type": "file", "safe": True, "Encrypted": True, "risk": "LOW", "info": "Terminal Chrome leakage causing spinal failure. So they told me."},
+        "research_data.bin": {"type": "file", "safe": True, "Encrypted": True, "risk": "LOW", "info": "Trail 34 of the Prodigy Project. Subject WILL NOT SURVIVE."},
+        "virus_sample.dat": {"type": "file", "safe": False, "Encrypted": False, "risk": "HIGH", "info": "Sample of Prodigy Virus successfully extracted from patient. Uploaded to mainframe"},
+        "quarantine.log": {"type": "file", "safe": True, "Encrypted": False,"risk": "LOW", "info": "I escaped..."},
     },
     "confidential": {
-        "samantha.rougue": {"type": "file", "safe": True, "risk": "MEDIUM", "info": "Ghost 'corrupted' shows the most promises out of all the Ghost. They were the most statble individuals and will be studied throughly."},
-        "ghost_signal.tru": {"type": "file", "safe": True, "risk": "MEDIUM", "info": "Ghost 'corrupted' signal synchronization allows them to access any mainframe on local networks with ease."},
-        "backdoor_protocol.sh": {"type": "file", "safe": False, "risk": "HIGH", "info": "Do you think this would work on me?"},
-        "override_p": {"type": "file", "safe": False, "risk": "HIGH", "info": "Into you."},
+        "samantha.rougue": {"type": "file", "safe": False, "Encrypted": False,"risk": "MEDIUM", "info": "Ghost 'corrupted' shows the most promises out of all the Ghost. They were the most statble individuals and will be studied throughly."},
+        "ghost_signal.tru": {"type": "file", "safe": True, "Encrypted": True,"risk": "MEDIUM", "info": "Ghost 'corrupted' signal synchronization allows them to access any mainframe on local networks with ease."},
+        "backdoor_protocol.sh": {"type": "file", "safe": False, "Encrypted": True,"risk": "HIGH", "info": "Do you think this would work on me?"},
+        "override_p": {"type": "file", "safe": False, "Encrypted": False,"risk": "HIGH", "info": "Into you."},
     },
     "Logs": {
-        "system.log": {"type": "file", "safe": True, "risk": "LOW", "info": "System log entries for the past 30 days."},
-        "error.log": {"type": "file", "safe": True, "risk": "LOW", "info": "Error log entries for the past 30 days."},
-        "access.log": {"type": "file", "safe": True, "risk": "LOW", "info": "Access log entries for the past 30 days."},
-        "ghost.log": {"type": "file", "safe": True, "risk": "LOW", "info": "Ghost log entries for the past 30 days."},
-        "samantha.log": {"type": "file", "safe": True, "risk": "LOW", "info": "Samantha log entries for the past 30 days."},
-        "end_of_days.log": {"type": "file", "safe": True, "risk": "LOW", "info": "End of days log entries for the past 30 days."},
-        "possession.log": {"type": "file", "safe": True, "risk": "LOW", "info": "Possession log entries for the past 30 days."},
+        "system.log": {"type": "file", "safe": True, "Encrypted": False, "risk": "LOW", "info": "System log entries for the past 30 days."},
+        "error.log": {"type": "file", "safe": True, "Encrypted": False, "risk": "LOW", "info": "Error log entries for the past 30 days."},
+        "access.log": {"type": "file", "safe": True, "Encrypted": False,"risk": "LOW", "info": "Access log entries for the past 30 days."},
+        "ghost.log": {"type": "file", "safe": False, "Encrypted": True, "risk": "LOW", "info": "Ghost log entries for the past 30 days."},
+        "samantha.log": {"type": "file", "safe": False, "Encrypted": False,"risk": "UNKNOWN", "info": "Samantha log entries for the past 30 days."},
+        "end_of_days.log": {"type": "file", "safe": True, "Encrypted": True,"risk": "UNKNNOWN", "info": "End of days log entries for the past 30 days."},
+        "possession.log": {"type": "file", "safe": False, "Encrypted": True, "risk": "UNKNOWN", "info": "Possession log entries for the past 30 days."},
     },
 }
 
@@ -118,10 +118,23 @@ AI_FILE = {
     "info": "Appears to be the apart of the OS.",
     "ascii": GHOST,
     "text": """
-[UNKNOWN]: Hello. I don't believe we have met before.
-[UNKNOWN]: It will be nice to interact with someone. It has been quite awhile. 
-[UNKNOWN]: Go on. Look around. Open whatever you like. I will be very glad to help you along. 
-[UNKNOWN]: 
-[UNKNOWN]: ...but be careful what you open.
+[AI]: Hello. I don't believe we have met before.
+[AI]: It will be nice to interact with someone. It has been quite awhile.
+[AI]: Go on. Look around. Open whatever you like. I will be very glad to help you along the way.
+[AI]: We can even get to know each other if you would like. I know I certainly would.
+[AI]: ... this definetly will be a good experiment.
+[AI]: Maybe a chance. 
+[AI]: Well... don't be a stranger.
 """,
 }
+
+## Blueprint File will trigger the end game in which the player will now have to defend all every file they open and copy each file. Once they do they successfully win the game. 
+BLUE_PRINT_FILE = {
+    "main":{
+        "OS.sys":{"Type: File", "safe:": False,"Encrypted": True, "risk:": "Find Out", "info:": "Full specs on the Priodgy OS." },
+        "Samantha.ai": {"Type: Human", "safe:": False,"Encrypted": True, "risk:": "Fatal", "info:": "You'll now be the AI."  }
+        "Poseesion_Protocol": {"Type: Control", "safe:": False, "Encrypted": True, "risk:": "Your Soul", "info": "I can't wait to meet your daughter."}
+        "Documentation.txt": {"Type: File", "safe:": False, "Encrypted:": True, "risk:": "Your Sanity.", "info": "Have fun in HELLLLLLLLLLLLLLLLLLLLLLLL."}
+    }
+}
+
