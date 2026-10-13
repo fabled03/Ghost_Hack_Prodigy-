@@ -56,6 +56,9 @@ class VirusGame(App):
         self.defense = DefenseGame()
         self.pipeline = DataPipelineGame() 
 
+        # Track current directory navigation path for the user tree
+        self.current_path = [] # e.g., ["personal", "photos"]
+
         self.command_map = {
             "help": self.cmd_help,
             "connect": self.cmd_connect,
@@ -70,8 +73,7 @@ class VirusGame(App):
             "jump": self.cmd_jump
         }
         
-        # 'ls' removed from here so bare 'ls' command works smoothly
-        self.arg_commands = ["inspect", "encrypt", "debug", "delete", "rotate", "jump"]
+        self.arg_commands = ["ls","inspect", "encrypt", "debug", "delete", "rotate", "jump"]
         
         self.update_status_display()
         self.set_interval(1.0, self.update_status_display)
@@ -182,32 +184,42 @@ class VirusGame(App):
             await self.trigger_phase(2)
 
     # --- UNIFIED LS COMMAND ---
-    async def cmd_ls(self) -> None:
+    async def cmd_ls(self, args=None) -> None:
         if self.defense.game_active:
-            # Phase 6 / Active Defense Mode pool view
+            # Phase 6 Active Defense Mode pool view
             folder_name = getattr(self.defense, "current_folder_name", "target")
             await self.type_out_lines([f"> /{folder_name}/"] + [f">   {name}" for name in self.defense.home_files], delay=0.05)
             return
 
-        # Free exploration or pre-defense mode: Show root categories from USER_TREE
-        await self.type_out_lines([
-            "> /home/operator:",
-            ">   [DIR] documents/",
-            ">   [DIR] personal/",
-            ">   [DIR] projects/",
-            ">   [DIR] messages/",
-            ">   [DIR] images/"
-        ], delay=0.05)
+        # Import USER_TREE to dynamically traverse directories
+        from User_file_tree import USER_TREE
+        
+        target_dict = USER_TREE
+        path_label = "/home/operator"
 
-        # Phase 2 Investigation Mode: Browse root directories
-        await self.type_out_lines([
-            "> /home/operator:",
-            ">   [DIR] documents/",
-            ">   [DIR] personal/",
-            ">   [DIR] projects/",
-            ">   [DIR] messages/",
-            ">   [DIR] images/"
-        ], delay=0.05)
+        # If user provided a path argument (e.g., 'ls documents' or 'ls personal/photos')
+        if args and args[0]:
+            parts = args[0].replace('\\', '/').split('/')
+            for part in parts:
+                if part:
+                    if part in target_dict and isinstance(target_dict[part], dict) and target_dict[part].get("type") != "file":
+                        target_dict = target_dict[part]
+                        path_label += f"/{part}"
+                    else:
+                        await self.type_out_lines([f"> Directory not found: {args[0]}"], delay=0.05)
+                        return
+
+        # Render folder contents
+        output = [f"> {path_label}:"]
+        for key, val in target_dict.items():
+            if isinstance(val, dict):
+                if val.get("type") == "file":
+                    risk = val.get("risk", "LOW")
+                    output.append(f">   {key}  [risk: {risk}]")
+                else:
+                    output.append(f">   [DIR] {key}/")
+
+        await self.type_out_lines(output, delay=0.05)
 
     async def cmd_inspect(self, args) -> None:
         if not args:
