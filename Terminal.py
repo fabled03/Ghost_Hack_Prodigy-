@@ -98,6 +98,10 @@ class VirusGame(App):
         self.update_status_display()
 
     async def trigger_phase(self, phase: int):
+        # Prevent double-triggering if we are already on this phase
+        if self.director.current_phase == phase and phase == 8:
+            return
+
         lines = self.director.get_phase_text(phase)
         await self.type_out_lines(lines, delay=0.1)
         
@@ -115,6 +119,17 @@ class VirusGame(App):
             self.vitals_timer = self.set_interval(1.0, self.vitals_tick)
             attack_msg = self.defense.launch_attack().split('\n')
             await self.type_out_lines(attack_msg, delay=0.05)
+
+        elif phase == 7:
+            # Phase 7 conversation -> automatically transition to Phase 8 after a delay
+            self.set_timer(4.0, lambda: asyncio.create_task(self.trigger_phase(8)))
+
+        elif phase == 8:
+            # Phase 8: AI suppressed, free browsing mode (No duplicate triggers!)
+            self.defense.game_active = False
+            if getattr(self, "vitals_timer", None): 
+                self.vitals_timer.stop()
+            self.update_status_display()
 
     def update_status_display(self) -> None:
         if self.defense.game_active:
@@ -169,10 +184,20 @@ class VirusGame(App):
     # --- UNIFIED LS COMMAND ---
     async def cmd_ls(self) -> None:
         if self.defense.game_active:
-            # Phase 6 Defense Mode: List files from the randomly chosen single directory
+            # Phase 6 / Active Defense Mode pool view
             folder_name = getattr(self.defense, "current_folder_name", "target")
             await self.type_out_lines([f"> /{folder_name}/"] + [f">   {name}" for name in self.defense.home_files], delay=0.05)
             return
+
+        # Free exploration or pre-defense mode: Show root categories from USER_TREE
+        await self.type_out_lines([
+            "> /home/operator:",
+            ">   [DIR] documents/",
+            ">   [DIR] personal/",
+            ">   [DIR] projects/",
+            ">   [DIR] messages/",
+            ">   [DIR] images/"
+        ], delay=0.05)
 
         # Phase 2 Investigation Mode: Browse root directories
         await self.type_out_lines([
