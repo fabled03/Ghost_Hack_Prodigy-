@@ -5,4 +5,4 @@ def frame(art: str, pad: int = 1) -> str:
     edge = "-" * (width + 2 * pad)
     body = ["|" + " " * pad + line.ljust(width) + " " * pad + "|" for line in lines]
     return "\n".join(["." + edge + "."] + body + ["'" + edge + "'"])
- 
+
