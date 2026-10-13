@@ -1,4 +1,3 @@
-
 import asyncio
 import random
 from textual.app import App, ComposeResult
@@ -7,7 +6,7 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.reactive import reactive
 
 from director import StoryDirector
-from Defend_gameplay import DefenseGame, HOME_FILES, ATTACKER_LINES, TRAP_LINES
+from Defend_gameplay import DefenseGame, ATTACKER_LINES
 from Attack_gameplay import DataPipelineGame
 
 ASCII_TITLE = r"""
@@ -71,7 +70,8 @@ class VirusGame(App):
             "jump": self.cmd_jump
         }
         
-        self.arg_commands = ["ls", "inspect", "encrypt", "debug", "delete", "rotate", "jump"]
+        # 'ls' removed from here so bare 'ls' command works smoothly
+        self.arg_commands = ["inspect", "encrypt", "debug", "delete", "rotate", "jump"]
         
         self.update_status_display()
         self.set_interval(1.0, self.update_status_display)
@@ -102,7 +102,6 @@ class VirusGame(App):
         await self.type_out_lines(lines, delay=0.1)
         
         if phase == 5:
-            # INSTANT WRITE: Prevent the grid from typing out letter-by-letter
             grid = self.pipeline.start_game()
             if isinstance(grid, list):
                 for line in grid: self.stage.write(line)
@@ -111,6 +110,8 @@ class VirusGame(App):
                 
         elif phase == 6:
             self.defense.game_active = True
+            if getattr(self, "vitals_timer", None): 
+                self.vitals_timer.stop()
             self.vitals_timer = self.set_interval(1.0, self.vitals_tick)
             attack_msg = self.defense.launch_attack().split('\n')
             await self.type_out_lines(attack_msg, delay=0.05)
@@ -165,32 +166,23 @@ class VirusGame(App):
         if self.director.tutorial_step == 4 and self.director.current_phase == 1:
             await self.trigger_phase(2)
 
+    # --- UNIFIED LS COMMAND ---
     async def cmd_ls(self) -> None:
         if self.defense.game_active:
-            # Changed from /home/operator to a single unified target folder
-            await self.type_out_lines(["> /secure_memory_pool/"] + [f">   {name}" for name in self.defense.home_files], delay=0.05)
+            # Phase 6 Defense Mode: List files from the randomly chosen single directory
+            folder_name = getattr(self.defense, "current_folder_name", "target")
+            await self.type_out_lines([f"> /{folder_name}/"] + [f">   {name}" for name in self.defense.home_files], delay=0.05)
             return
 
-        # Phase 2 Directory Navigation
-        if not args:
-            await self.type_out_lines([
-                "> /home/operator:",
-                ">   [DIR] documents/",
-                ">   [DIR] personal/",
-                ">   [DIR] projects/",
-                ">   [DIR] messages/",
-                ">   [DIR] images/"
-            ], delay=0.05)
-        elif args[0] == "images":
-            await self.type_out_lines([
-                "> /home/operator/images:",
-                ">   family_photo.jpg",
-                ">   vacation.png",
-                ">   disease.png",
-                ">   operation.png"
-            ], delay=0.05)
-        else:
-            await self.type_out_lines([f"> Contents of {args[0]}: Access Denied or Empty."], delay=0.05)
+        # Phase 2 Investigation Mode: Browse root directories
+        await self.type_out_lines([
+            "> /home/operator:",
+            ">   [DIR] documents/",
+            ">   [DIR] personal/",
+            ">   [DIR] projects/",
+            ">   [DIR] messages/",
+            ">   [DIR] images/"
+        ], delay=0.05)
 
     async def cmd_inspect(self, args) -> None:
         if not args:
@@ -198,7 +190,7 @@ class VirusGame(App):
             return
             
         name = args[0]
-        # Progress story if the user inspects the target file in phase 2
+        # Progress story if the user inspects disease.png in phase 2
         if name == "disease.png" and self.director.current_phase == 2:
             await self.type_out_lines([f"> {name}: I tried to hold on. I tried to fight. I tried it all. Yet they gave up on me."], delay=0.05)
             await asyncio.sleep(1)
@@ -236,12 +228,18 @@ class VirusGame(App):
                 f"> Encryption complete. Firewall #{self.defense.firewalls} online.",
                 random.choice(ATTACKER_LINES)
             ], delay=0.05)
-            self.defense.end_attack()
             
+            # End the attack and stop the defense loop temporarily for narrative
+            self.defense.end_attack()
+            self.defense.game_active = False 
+            if getattr(self, "vitals_timer", None): 
+                self.vitals_timer.stop()
+
+            # Advance from Phase 6 to Phase 7 cleanly!
             if self.director.current_phase == 6:
                 await self.trigger_phase(7)
         else:
-            self.defense.cpu += 15
+            self.defense.cpu += 5
             await self.type_out_lines([f"> {name} was clean. Attack continues."], delay=0.05)
 
     async def cmd_debug(self, args) -> None:
@@ -251,9 +249,18 @@ class VirusGame(App):
         
         if name == self.defense.infected_file:
             await self.type_out_lines(["> Malicious process killed."], delay=0.05)
+            
+            # End attack and stop defense vitals loop
             self.defense.end_attack()
+            self.defense.game_active = False 
+            if getattr(self, "vitals_timer", None): 
+                self.vitals_timer.stop()
+
+            # Advance to Phase 7 dialogue
+            if self.director.current_phase == 6:
+                await self.trigger_phase(7)
         else:
-            self.defense.cpu += 15
+            self.defense.cpu += 5
             await self.type_out_lines([f"> {name} was clean. Attack continues."], delay=0.05)
 
     async def cmd_delete(self, args) -> None:
@@ -264,9 +271,18 @@ class VirusGame(App):
         
         if name == self.defense.infected_file:
             await self.type_out_lines(["> Infection source destroyed."], delay=0.05)
+            
+            # End attack and stop defense vitals loop
             self.defense.end_attack()
+            self.defense.game_active = False 
+            if getattr(self, "vitals_timer", None): 
+                self.vitals_timer.stop()
+
+            # Advance to Phase 7 dialogue
+            if self.director.current_phase == 6:
+                await self.trigger_phase(7)
         else:
-            self.defense.cpu += 15
+            self.defense.cpu += 5
             await self.type_out_lines([f"> {name} was clean. Attack continues."], delay=0.05)
 
     async def vitals_tick(self) -> None:
@@ -282,7 +298,6 @@ class VirusGame(App):
 
     async def cmd_rotate(self, args) -> None:
         if self.director.current_phase == 5:
-            # INSTANT WRITE: Do not use type_out_lines for grid manipulation
             grid = self.pipeline.rotate_pipe(args)
             if isinstance(grid, list):
                 for line in grid: self.stage.write(line)
@@ -293,7 +308,6 @@ class VirusGame(App):
         if self.director.current_phase == 5:
             success, message = self.pipeline.check_transmission()
             
-            # INSTANT WRITE
             if isinstance(message, list):
                 for line in message: self.stage.write(line)
             else:
