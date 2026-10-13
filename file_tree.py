@@ -7,7 +7,7 @@ WELCOME, OPERATOR
 
 The Prodigy mainframe has been breached. Someone is inside your system, and they are coming for your files.
 
-You have succesfully hacked into the Esper Groups top secret Prodigy OS. Your job is to find the blueprints of this OS, copy the data and extract without being detected. 
+You have succesfully hacked into the Esper Groups top secret Prodigy OS. Your job is to find the blueprints of this OS, copy the data and extract without being detected.
 
 Read every file in this folder. Use: open <file>
 """},
@@ -20,20 +20,19 @@ When you are safe they rest at your baseline. Under attack they climb every seco
 
 If any one of them maxes out, your synapses will burnout.
 
-If an infection takes root, your baseline rises for good and will be set at a new baseline. 
+If an infection takes root, your baseline rises for good and will be set at a new baseline.
 """},
         "03_defending.txt": {"type": "file", "risk": "NONE", "tutorial": True, "info": "Training file 3 of 4.", "text": """
 DEFENDING
 
 An attack infects files in your directory. The more files infected, the faster your vitals climb, and the infection keeps spreading until you clear it.
 
-scan            which folders are infected
+scan            which folders are infected, and which files are encrypted
 ls / tree       look inside your folders
 inspect <file>  check one file
 
 Then clear each infected file:
 encrypt <file>  cure and lock it. Raises a firewall.
-debug <file>    cure it and repair permanent damage
 delete <file>   destroy it for good
 
 You only have seconds before the infection takes root. Watch the countdown in the status panel.
@@ -41,15 +40,16 @@ You only have seconds before the infection takes root. Watch the countdown in th
         "04_commands.txt": {"type": "file", "risk": "NONE", "tutorial": True, "info": "Training file 4 of 4.", "text": """
 COMMANDS
 
-ls [path]       list a folder
-cd <path>       move into a folder
-open<file>      open folder
-inspect <file>  check a file for viruses
-encrypt<file>   protect your files/can no longer be hacked again/takes time to do though
-delete<file>    prementaely removes file, takes less time.
-debug<file>     check the risk level of a file.
-help            list every command
-manual          defense reminders
+ls [path]        list a folder
+tree [path]      show everything inside a folder
+cd <path>        move into a folder
+open <file>      read a file
+inspect <file>   show a file's risk level and check it for viruses
+scan [path]      check if a file or folder is encrypted, so you can prepare to breach it
+encrypt <file>   protect your files/can no longer be hacked again/takes time to do though
+delete <file>    prementaely removes file, takes less time.
+help             list every command
+manual           defense reminders
 
 """},
     },
@@ -103,7 +103,7 @@ manual          defense reminders
         "access.log": {"type": "file", "safe": True, "Encrypted": False,"risk": "LOW", "info": "Access log entries for the past 30 days."},
         "ghost.log": {"type": "file", "safe": False, "Encrypted": True, "risk": "LOW", "info": "Ghost log entries for the past 30 days."},
         "samantha.log": {"type": "file", "safe": False, "Encrypted": False,"risk": "UNKNOWN", "info": "Samantha log entries for the past 30 days."},
-        "end_of_days.log": {"type": "file", "safe": True, "Encrypted": True,"risk": "UNKNNOWN", "info": "End of days log entries for the past 30 days."},
+        "end_of_days.log": {"type": "file", "safe": True, "Encrypted": True,"risk": "UNKNOWN", "info": "End of days log entries for the past 30 days."},
         "possession.log": {"type": "file", "safe": False, "Encrypted": True, "risk": "UNKNOWN", "info": "Possession log entries for the past 30 days."},
     },
 }
@@ -116,25 +116,23 @@ AI_FILE = {
     "risk": "UNKNOWN",
     "ai": True,
     "info": "Appears to be the apart of the OS.",
-    "ascii": GHOST,
     "text": """
 [AI]: Hello. I don't believe we have met before.
 [AI]: It will be nice to interact with someone. It has been quite awhile.
 [AI]: Go on. Look around. Open whatever you like. I will be very glad to help you along the way.
 [AI]: We can even get to know each other if you would like. I know I certainly would.
 [AI]: ... this definetly will be a good experiment.
-[AI]: Maybe a chance. 
+[AI]: Maybe a chance.
 [AI]: Well... don't be a stranger.
 """,
 }
 
-## Blueprint File will trigger the end game in which the player will now have to defend all every file they open and copy each file. Once they do they successfully win the game. 
-BLUE_PRINT_FILE = {
-    "main":{
-        "OS.sys":{"Type: File", "safe:": False,"Encrypted": True, "risk:": "Find Out", "info:": "Full specs on the Priodgy OS." },
-        "Samantha.ai": {"Type: Human", "safe:": False,"Encrypted": True, "risk:": "Fatal", "info:": "You'll now be the AI."  }
-        "Poseesion_Protocol": {"Type: Control", "safe:": False, "Encrypted": True, "risk:": "Your Soul", "info": "I can't wait to meet your daughter."}
-        "Documentation.txt": {"Type: File", "safe:": False, "Encrypted:": True, "risk:": "Your Sanity.", "info": "Have fun in HELLLLLLLLLLLLLLLLLLLLLLLL."}
-    }
-}
 
+# End-game files. They materialize once enough files have been read (see main.py).
+# "type" here is a display label, not the file/folder marker used in FILE_TREE.
+BLUEPRINT_FILES = {
+    "OS.sys": {"type": "File", "safe": False, "Encrypted": True, "risk": "Find Out", "info": "Full specs on the Prodigy OS."},
+    "Samantha.ai": {"type": "Human", "safe": False, "Encrypted": True, "risk": "Fatal", "info": "You'll now be the AI."},
+    "Poseesion_Protocol": {"type": "Control", "safe": False, "Encrypted": True, "risk": "Your Soul", "info": "I can't wait to meet your daughter."},
+    "Documentation.txt": {"type": "File", "safe": False, "Encrypted": True, "risk": "Your Sanity.", "info": "Have fun in HELLLLLLLLLLLLLLLLLLLLLLLL."},
+}
