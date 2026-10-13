@@ -1,6 +1,5 @@
-import 
 
-ef frame(art: str, pad: int = 1) -> str:
+def frame(art: str, pad: int = 1) -> str:
     lines = art.strip("\n").split("\n")
     width = max(len(line) for line in lines)
     edge = "-" * (width + 2 * pad)
