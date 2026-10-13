@@ -12,33 +12,37 @@
 # "info" text is shown when the player runs `inspect`. The story text below is
 # placeholder, so rewrite it however you like. Folders can be nested as deeply
 # as you want.
+From ascii_art import Takeover, Daughter, Appartment, Together, Smile
 
 USER_TREE = {
     "documents": {
-        "Mission_Brief.txt": {"type": "file", "risk": "LOW", "info": "Operator briefing: the Prodigy OS core must stay isolated from the outer network at all times."},
-        "access_codes.txt": {"type": "file", "risk": "HIGH", "info": "Handwritten codes for the core. The pages are warm, like someone just held them."},
-        "budget_q3.xls": {"type": "file", "risk": "LOW", "info": "Quarterly budget. The Chrome division is over by 40% and nobody will say why."},
-        "resignation_draft.doc": {"type": "file", "risk": "LOW", "info": "I can't keep doing this. They never tell us what the Chrome does to people."},
+        "Mission_Brief.txt": {"type": "file", "risk": "LOW", "info": "Infiltrate the Esper Group and aquire senstitive documents in regards to Prodigy OS."},
+        "access_port.txt": {"type": "file", "risk": "HIGH", "info": "Encrypted key for entry into Prodigy OS."},
+        "offshore_account.xls": {"type": "file", "risk": "LOW", "info": "Current value: $2,500 credits. Transfer of 10,000,000 credits pending."},
+        "resume.doc": {"type": "file", "risk": "LOW", "info": "Succesful hacks into Arasaka Corportaion, Militech, and Kyroshi Corporation."},
     },
     "personal": {
-        "diary.txt": {"type": "file", "risk": "LOW", "info": "Night shift, day 112. The mainframe hums at a pitch I can almost feel in my teeth."},
-        "voicemail.wav": {"type": "file", "risk": "MEDIUM", "info": "Three missed calls from an unknown number. Someone is breathing on the line."},
+        "diary.txt": {"type": "file", "risk": "LOW", "info": "Every dive feels like more of me is code. This has to be the last one. This job should give me enough to give her a chrome body to finally live her life."},
+        "voicemail.wav": {"type": "file", "risk": "MEDIUM", "info": "Three missed calls from an Samantha. 1. 'I miss you, come home soon please.' 2. 'I love you please be careful for me.' 3. 'Happy Birthday!!!' "},
         "photos": {
-            "sister.jpg": {"type": "file", "risk": "LOW", "info": "She stopped answering my calls after the implant."},
-            "apartment.png": {"type": "file", "risk": "LOW", "info": "The view from the 40th floor. The rain never stops."},
-            "mirror.png": {"type": "file", "risk": "HIGH", "info": "Why is there someone standing behind you?"},
+            "daughter.jpg": {"type": "file", "risk": "LOW", "info": "Her birthday before the attack.", "ASCII": Daughter},
+            "apartment.png": {"type": "file", "risk": "LOW", "info": "The first day we moved in.", "ASCII": Appartment},
+            "together.png": {"type": "file", "risk": "HIGH", "info": "That's not Samantha.", "ASCII": Together},
+            "takeover.png": {"type": "file", "risk": "CRITICAL", "info": "I feel the potential of this shell.", "ASCII": Takeover},
+            "smile.png": {"type": "file", "risk": "LOW", "info": "Smile, because I will take care of it now.", "ASCII": Smile},
         },
     },
     "projects": {
-        "firewall_v2.py": {"type": "file", "risk": "LOW", "info": "Draft of the second-generation firewall. Unfinished."},
-        "ghost_tracker.py": {"type": "file", "risk": "LOW", "info": "Script that watches for the GHOST signal. It has been quiet since last Tuesday."},
-        "backdoor_test.sh": {"type": "file", "risk": "HIGH", "info": "I never wrote this."},
-        "patch_notes.md": {"type": "file", "risk": "LOW", "info": "Changelog for the Prodigy OS patches. The last entry is blank."},
+        "firewall_v2.py": {"type": "file", "risk": "LOW", "info": "Self made firewall to protect myself from netrunners."},
+        "home_security.py": {"type": "file", "risk": "LOW", "info": "In case of an attack on me or the appartment, security lockdown and trauma team suppport."},
+        "backdoor_test.sh": {"type": "file", "risk": "HIGH", "info": "Self writing code into my interface?"},
+        "patch_notes.md": {"type": "file", "risk": "MEDIUM", "info": "I just did a system update...."},
     },
     "messages": {
-        "inbox.db": {"type": "file", "risk": "LOW", "info": "Forty unread messages. Most are automated."},
-        "esper_memo.eml": {"type": "file", "risk": "LOW", "info": "Esper Group reminder: all Operators must report anomalies within 24 hours."},
-        "unknown_sender.eml": {"type": "file", "risk": "CRITICAL", "info": "Hello, Operator. I have been in your files for a long time. Did you not notice?"},
-        "last_words.txt": {"type": "file", "risk": "CRITICAL", "info": "If you are reading this, I'm already inside."},
+        "inbox.db": {"type": "file", "risk": "LOW", "info": "5 unread messages and 4 saved messages."},
+        "esper_memo.eml": {"type": "file", "risk": "LOW", "info": "Note: Higher potential secruity risk expected in the coming weeks."},
+        "f8s9_0-4ty.eml": {"type": "file", "risk": "CRITICAL", "info": "Corruption, corruption, corruption."},
+        "last_words.txt": {"type": "file", "risk": "CRITICAL", "info": "Don't delete; if you do, it is only a matter of time."},
+        "unknown.txt":{"type": "file", "risk": "CRITICAL", "info": "Just let go."}
     },
 }

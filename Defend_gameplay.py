@@ -7,20 +7,22 @@ ATTACKS = [
     {"name": "PHISHING PAYLOAD", "cpu": 5, "ram": 0.7, "bpm": 4},
 ]
 
-FILES = {
-    "sys_core.dat": {"safe": True, "result": "Core module verified."},
-    "anomaly.tmp": {"safe": False},
-    "lazarus_blueprint.enc": {"safe": True, "result": "Project Lazarus blueprint accessed.", "win": True}
-}
-
 HOME_FILES = ["kernel.dll", "svch0st.exe", "sys_log.txt", "update_tmp.dat"]
 ATTACKER_LINES = ["[UNKNOWN]: You can't lock me out forever.", "[UNKNOWN]: Firewall detected. Adapting."]
 TRAP_LINES = ["FATAL: Triggered a defense countermeasure!", "WARNING: Unauthorized access detected by core."]
-ATTACK_DEADLINE = 8
-PERM_CPU_HIT = 8
-PERM_RAM_HIT = 1.0
-MAX_BASE_CPU = 60
-MAX_BASE_RAM = 10
+PRESSURE = 0.22          # global multiplier on how fast vitals climb
+INITIAL_INFECTED = 2     # files infected when an attack starts
+MAX_INFECTED = 3         # the infection never spreads beyond this many at once
+SPREAD_EVERY = 20        # seconds between new infections while the attack lasts
+ATTACK_DEADLINE = 10     # seconds before the infection takes root
+PERM_CPU_HIT = 8         # permanent CPU baseline increase
+PERM_RAM_HIT = 1.0       # permanent RAM baseline increase (GB)
+LOST_FILE_LIMIT = 5      # delete this many files and the AI takes over
+MAX_BASE_CPU = 98
+MAX_BASE_RAM = 15
+BASE_CPU = 4
+BASE_RAM = 1.2
+BASE_BPM = 64
 
 def bar(value, maximum, width=10):
     filled = int(width * min(value, maximum) / maximum)
