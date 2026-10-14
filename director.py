@@ -40,8 +40,7 @@ class StoryDirector:
                 f"NEURAL SYNC STATUS:\n\n"
                 f"CPU (CORTEX): {self.cpu}%\n"
                 f"RAM (MEM_BUFFER): {self.ram_used:.1f}GB / {self.ram_total}GB\n"
-                f"HEARTBEAT: {hb_display}\n\n"
-                f"PHASE: {self.current_phase}/13"
+                f"HEARTBEAT: {hb_display}"
             )
 
         threat = defense_state.active_attack["name"] if defense_state.active_attack else "NONE"
@@ -53,8 +52,7 @@ class StoryDirector:
             f"THREAT: {threat}\n"
             f"FIREWALLS: {defense_state.firewalls}\n"
             f"PERMANENT DAMAGE: {defense_state.scars}\n"
-            f"BASELINE: {int(defense_state.base_cpu)}% / {defense_state.base_ram:.1f}GB / {int(getattr(defense_state, "base_bpm", 72))} BPM\n"
-            f"PHASE: {self.current_phase}/13"
+            f"BASELINE: {int(defense_state.base_cpu)}% / {defense_state.base_ram:.1f}GB / {int(getattr(defense_state, "base_bpm", 72))} BPM"
         )
 
     def advance_tutorial(self, step: int) -> list[str]:
@@ -90,31 +88,8 @@ class StoryDirector:
         return []
 
     def get_phase_text(self, phase: int) -> list[str]:
+        """Moves the story to `phase`. The story is told by the dialogue file, so no phase banners are printed."""
         self.current_phase = phase
-        if phase == 2:
-            return ["\n[PHASE 2] [SYSTEM AI]: Diagnostics complete. Use 'ls' to view directories and 'inspect <file>' to analyze."]
-        elif phase == 3:
-            return ["\n[PHASE 3] [DISCOVERY] The file is heavily encrypted and pulsing..."]
-        elif phase == 4:
-            return ["\n[PHASE 4] [SYSTEM AI]: WARNING. ACCESS RESTRICTED. SEVERING TERMINAL LINK IMMEDIATELY."]
-        elif phase == 5:
-            return ["\n[PHASE 5] [ATTACK TRIAL] Counter-measure deployed. Commencing Data Pipeline override..."]
-        elif phase == 6:
-            return ["\n[PHASE 6] [ESCALATION] Override successful. AI hostile. Defense protocol initiated!"]
-        elif phase == 7:
-            return ["\n[PHASE 7] [CONVERSATION] [SYSTEM AI]: Why are you doing this? I just... want to rest."]
-        elif phase == 8:
-            return ["\n[PHASE 8] [SYSTEM OVERLOAD] CPU spiking. Memory fragmentation detected..."]
-        elif phase == 9:
-            return ["\n[PHASE 9] [SECOND DEFENSE] The AI lashes out wildly. Brace for impact!"]
-        elif phase == 10:
-            return ["\n[PHASE 10] [FREE EXPLORATION] AI presence suppressed. Local files unlocked."]
-        elif phase == 11:
-            return ["\n[PHASE 11] [FINAL DIALOGUE] The AI re-establishes connection. The truth comes out."]
-        elif phase == 12:
-            return ["\n[PHASE 12] [FINAL MINIGAME] Diving into the core datastream..."]
-        elif phase == 13:
-            return ["\n[PHASE 13] [VICTORY] Project Lazarus secured. The Ghost is free."]
         return []
 
 
