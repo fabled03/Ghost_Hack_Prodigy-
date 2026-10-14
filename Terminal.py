@@ -34,7 +34,7 @@ FILE_THRESHOLD = 20                   # unique files to open before the blueprin
 ENDGAME_ATTACK_GAP = 12               # seconds between attacks during the final minigame
 
 # The only commands the tutorial files teach. `help` lists exactly these.
-TUTORIAL_COMMANDS = ["ls", "tree", "cd", "open", "inspect", "scan", "encrypt", "delete", "help", "manual"]
+TUTORIAL_COMMANDS = ["ls", "tree", "cd", "open", "inspect", "scan", "encrypt", "delete", "help", "manual", "theme"]
 
 # Story commands the game prompts for itself when they matter (the jack-in prompt,
 # the pipeline grid, the blueprint alert). They work but are not listed by `help`.
@@ -68,6 +68,22 @@ class VirusGame(App):
     RichLog { padding: 1; color: lime; text-style: bold; overflow-x: hidden; }
     Status { padding: 1; content-align: left top; color: yellow; }
     Input { border: none; background: #000000; color: cyan; }
+
+    /* === PREMIUM SKIN: CYBERPUNK === */
+    Screen.cyberpunk #left-stage { border: solid fuchsia; }
+    Screen.cyberpunk #right-top { border: solid cyan; }
+    Screen.cyberpunk #right-bottom { border: solid fuchsia; }
+    Screen.cyberpunk RichLog { color: fuchsia; }
+    Screen.cyberpunk Status { color: cyan; }
+    Screen.cyberpunk Input { color: fuchsia; }
+
+    /* === PREMIUM SKIN: AMBER === */
+    Screen.amber #left-stage { border: solid darkorange; }
+    Screen.amber #right-top { border: solid gold; }
+    Screen.amber #right-bottom { border: solid darkorange; }
+    Screen.amber RichLog { color: darkorange; }
+    Screen.amber Status { color: gold; }
+    Screen.amber Input { color: darkorange; }
     """
 
     status_text = reactive("SYSTEM OFFLINE")
@@ -91,7 +107,7 @@ class VirusGame(App):
     def on_mount(self) -> None:
         self.query_one(Input).focus()
         self.stage = self.query_one("#stage_view", RichLog)
-
+        
         self.command_map = {
             "help": self.cmd_help,
             "ls": self.cmd_ls,
@@ -107,6 +123,7 @@ class VirusGame(App):
             "copy": self.cmd_copy,
             "rotate": self.cmd_rotate,
             "transmit": self.cmd_transmit,
+            "theme": self.cmd_theme,  
         }
         if DEBUG_COMMANDS:
             self.command_map["clear"] = self.cmd_clear
@@ -1011,6 +1028,31 @@ class VirusGame(App):
                 f"> Copy Progress: [{len(self.copied_blueprints)}/{len(BLUEPRINT_FILES)} blueprints copied]",
             ], delay=0.05)
         await self.check_win()
+
+    async def cmd_theme(self, args) -> None:
+        if not args:
+            await self.type_out_lines([
+                "> Available premium skins: default, cyberpunk, amber", 
+                "> Usage: theme <name>"
+            ], delay=0.05)
+            return
+        
+        skin = args[0].lower()
+        
+        # Strip existing skin classes
+        self.screen.remove_class("cyberpunk")
+        self.screen.remove_class("amber")
+        
+        if skin == "cyberpunk":
+            self.screen.add_class("cyberpunk")
+            await self.type_out_lines(["> [TRANSACTION SUCCESS] Cyberpunk skin equipped."], delay=0.05)
+        elif skin == "amber":
+            self.screen.add_class("amber")
+            await self.type_out_lines(["> [TRANSACTION SUCCESS] Retro Amber skin equipped."], delay=0.05)
+        elif skin == "default":
+            await self.type_out_lines(["> Default tactical interface restored."], delay=0.05)
+        else:
+            await self.type_out_lines([f"> [ERROR] Skin '{skin}' not found or requires premium unlock."], delay=0.05)
 
 
 if __name__ == "__main__":
