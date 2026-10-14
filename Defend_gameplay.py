@@ -39,10 +39,10 @@ def get_random_directory_files(tree, exclude=(), size=POOL_SIZE):
  
  
 ATTACKS = [
-    {"name": "BRUTE FORCE",      "cpu": 0.8, "ram": 0.05, "bpm": 1.0},
-    {"name": "SQL INJECTION",    "cpu": 0.5, "ram": 0.1,  "bpm": 1.2},
-    {"name": "DDOS FLOOD",       "cpu": 1.2, "ram": 0.08, "bpm": 1.5},
-    {"name": "PHISHING PAYLOAD", "cpu": 0.6, "ram": 0.08, "bpm": 0.8},
+    {"name": "BRUTE FORCE",      "cpu": 1.4, "ram": 0.075, "bpm": 1.0},
+    {"name": "SQL INJECTION",    "cpu": 2.0, "ram": 0.1,  "bpm": 1.2},
+    {"name": "DDOS FLOOD",       "cpu": 1.1, "ram": 0.12, "bpm": 1.5},
+    {"name": "PHISHING PAYLOAD", "cpu": 1.4, "ram": 0.15, "bpm": 0.8},
 ]
  
 ATTACKER_LINES = ["[UNKNOWN]: You can't lock me out forever.", "[UNKNOWN]: Firewall detected. Adapting."]
@@ -56,8 +56,8 @@ INITIAL_INFECTED = 2
 MAX_INFECTED = 3
 SPREAD_EVERY = 20
 ATTACK_DEADLINE = 35
-PERM_CPU_HIT = 2
-PERM_RAM_HIT = 0.1
+PERM_CPU_HIT = 8
+PERM_RAM_HIT = 1.0
 LOST_FILE_LIMIT = 5
 MAX_BASE_CPU = 98
 MAX_BASE_RAM = 15
