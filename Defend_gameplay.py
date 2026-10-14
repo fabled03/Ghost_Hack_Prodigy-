@@ -3,29 +3,51 @@ import random
 from User_file_tree import USER_TREE
 
 
-def get_random_directory_files(tree):
-    """Pick a random folder that holds files. Returns (folder_name, {file_name: file_data})."""
+POOL_SIZE = 5  # files shown (and deletable) in every defense; matches LOST_FILE_LIMIT
+
+
+def collect_folders(tree):
+    """Every folder that holds files: [(folder_name, {file_name: file_data})]."""
     folders = []
 
-    def collect(d):
+    def walk(d):
         for k, v in d.items():
-            if isinstance(v, dict):
-                # Check if this folder contains direct file items
-                if any(isinstance(sub_v, dict) and sub_v.get("type") == "file" for sub_v in v.values()):
-                    folders.append((k, v))
-                collect(v)
+            if isinstance(v, dict) and v.get("type") != "file":
+                files = {n: f for n, f in v.items() if isinstance(f, dict) and f.get("type") == "file"}
+                if files:
+                    folders.append((k, files))
+                walk(v)
 
-    collect(tree)
+    walk(tree)
+    return folders
 
+
+def get_random_directory_files(tree, exclude=(), size=POOL_SIZE):
+    """Pick `size` files for one defense. Starts from one random folder and tops up with
+    files from other folders when it has too few, so there are always enough to delete.
+    Returns (folder_name, {file_name: file_data}, {file_name: folder_name})."""
+    folders = collect_folders(tree)
     if not folders:
         return "root", {
             "kernel.dll": {"type": "file", "risk": "LOW", "info": "Core system library."},
             "sys_log.txt": {"type": "file", "risk": "LOW", "info": "System log."},
-        }
+        }, {"kernel.dll": "root", "sys_log.txt": "root"}
 
-    chosen_name, chosen_dict = random.choice(folders)
-    files = {k: v for k, v in chosen_dict.items() if isinstance(v, dict) and v.get("type") == "file"}
-    return chosen_name, files
+    main_name, main_files = random.choice(folders)
+    chosen = {n: f for n, f in main_files.items() if n not in exclude}
+    origin = {n: main_name for n in chosen}
+    if len(chosen) > size:
+        keep = random.sample(list(chosen), size)
+        chosen, origin = {n: chosen[n] for n in keep}, {n: main_name for n in keep}
+
+    others = [(n, f, fname) for fname, files in folders if fname != main_name
+              for n, f in files.items() if n not in exclude and n not in chosen]
+    random.shuffle(others)
+    for n, f, fname in others:
+        if len(chosen) >= size:
+            break
+        chosen[n], origin[n] = f, fname
+    return main_name, chosen, origin
 
 
 ATTACKS = [
@@ -82,11 +104,15 @@ class DefenseGame:
         self.deleted = []  # Files the player destroyed; too many and the AI takes over (silently)
 
         # Pick a random single directory from the tree for this session
-        folder_name, file_list = get_random_directory_files(USER_TREE)
+        self.new_pool()
+
+    def new_pool(self):
+        """Fresh set of POOL_SIZE files for this defense. Destroyed files never come back."""
+        folder_name, files, origin = get_random_directory_files(USER_TREE, exclude=set(self.deleted))
         self.current_folder_name = folder_name
-        self.file_data = dict(file_list)
-        self.home_files = list(file_list)
-        self.backup_files = list(file_list)
+        self.file_data = dict(files)
+        self.file_folder = dict(origin)
+        self.home_files = list(files)
 
     def check_takeover(self) -> tuple[bool, list[str]]:
         """Returns (taken_over, lines_to_print)."""
@@ -146,8 +172,7 @@ class DefenseGame:
         self.base_ram = min(MAX_BASE_RAM, self.base_ram + PERM_RAM_HIT)
 
     def launch_attack(self) -> str:
-        if not self.home_files:
-            self.home_files = list(self.backup_files)
+        self.new_pool()  # every attack: POOL_SIZE files to inspect, encrypt or delete
 
         # Riskier files are more likely to be the infection source
         weights = [RISK_WEIGHT.get(self.file_data.get(name, {}).get("risk"), 1) for name in self.home_files]
