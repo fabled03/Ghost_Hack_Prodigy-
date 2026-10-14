@@ -4,6 +4,8 @@ import re
 
 from Defend_gameplay import bar
 
+HEART_BAR_MAX = 180  # the heart bar fills up at the heart rate that flatlines you
+
 PLAYER_SPEAKER = "YOU"  # who speaks an option's "reply" when no speaker is given
 
 
@@ -38,7 +40,7 @@ class StoryDirector:
                 f"NEURAL SYNC STATUS:\n\n"
                 f"CPU (CORTEX): {self.cpu}%\n"
                 f"RAM (MEM_BUFFER): {self.ram_used:.1f}GB / {self.ram_total}GB\n"
-                f"HEARTBEAT: {hb_display}\n\n"
+                f"HEARTBEAT: {hb_display}"
             )
 
         threat = defense_state.active_attack["name"] if defense_state.active_attack else "NONE"
@@ -46,11 +48,11 @@ class StoryDirector:
             f"SYSTEM STATUS:\n\n"
             f"CPU:   [{bar(defense_state.cpu, 100)}] {int(defense_state.cpu)}%\n"
             f"RAM:   [{bar(defense_state.ram, 16)}] {defense_state.ram:.1f}/16GB\n"
-            f"HEART: [{bar(defense_state.bpm, 180)}] {int(defense_state.bpm)} BPM [ {heart_icon} ]\n\n"
+            f"HEART: [{bar(defense_state.bpm, HEART_BAR_MAX)}] {int(defense_state.bpm)} BPM [ {heart_icon} ]\n\n"
             f"THREAT: {threat}\n"
             f"FIREWALLS: {defense_state.firewalls}\n"
             f"PERMANENT DAMAGE: {defense_state.scars}\n"
-            f"BASELINE: {int(defense_state.base_cpu)}% / {defense_state.base_ram:.1f}GB\n"
+            f"BASELINE: {int(defense_state.base_cpu)}% / {defense_state.base_ram:.1f}GB / {int(getattr(defense_state, "base_bpm", 72))} BPM"
         )
 
     def advance_tutorial(self, step: int) -> list[str]:
@@ -69,8 +71,7 @@ class StoryDirector:
             self.cpu = 12
             self.ram_used = 1.2
             return [
-                "\n|==|iiii|>-----",
-                "> Syringe engaged. Piercing skin...",
+                "\n> Syringe engaged. Piercing skin...",
                 "> Neural pathways syncing... [OK]",
                 "> Biometrics detected. Vitals stable.",
             ]
@@ -87,6 +88,7 @@ class StoryDirector:
         return []
 
     def get_phase_text(self, phase: int) -> list[str]:
+        """Moves the story to `phase`. The story is told by the dialogue file, so no phase banners are printed."""
         self.current_phase = phase
         return []
 
@@ -109,12 +111,18 @@ class DialogueManager:
        "reply": [ {"speaker": "YOU", "text": "the full line"}, {"speaker": "UNKNOWN", "text": "..."} ],
        "next_node": "key"}
     """
+
     def __init__(self, dialogue_file_path):
+        self.load_error = ""
         try:
             with open(dialogue_file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-        except (OSError, ValueError):
-            data = {}
+            if not isinstance(data, dict):
+                raise ValueError("the top level must be an object { ... }")
+        except OSError:
+            data, self.load_error = {}, f"not found or unreadable: {dialogue_file_path}"
+        except ValueError as err:
+            data, self.load_error = {}, f"invalid JSON ({err})"
 
         self.triggers = data.get("file_triggers", {})
         self.nodes = data.get("nodes", {})
@@ -122,6 +130,25 @@ class DialogueManager:
         self.opened_files = set()
         self.triggered_dialogues = set()
         self.current_node = None
+
+    def problems(self) -> list[str]:
+        """Plain-language list of everything wrong with the dialogue file (empty when it is fine)."""
+        if self.load_error:
+            return [self.load_error]
+        found = []
+        if not self.triggers:
+            found.append("no file_triggers, so no conversation can start")
+        for count, node in self.triggers.items():
+            if node not in self.nodes:
+                found.append(f"trigger {count} starts node '{node}', which does not exist")
+        for name, node in self.nodes.items():
+            if not isinstance(node, dict):
+                continue
+            for option in node.get("options", []):
+                nxt = option.get("next_node")
+                if nxt and nxt not in self.nodes:
+                    found.append(f"node '{name}' has an option leading to '{nxt}', which does not exist")
+        return found
 
     @property
     def active(self) -> bool:

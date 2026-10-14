@@ -2,6 +2,7 @@ import asyncio
 import copy
 import os
 import random
+import re
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
@@ -25,7 +26,25 @@ ASCII_TITLE = r"""
  
 PROMPT = "> root@system:~# "
 TRAINING_FENCE = "> [ACCESS DENIED] Finish your training first: 'open' every file in /tutorial."
-DIALOGUE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dialogue_tree.json")
+CHOICE_INPUT = re.compile(r"[\[\(#\s]*\d+[\]\)\.\s:]*")  # "1", "1.", "[1]", "(1)", "#1"
+def find_dialogue_file() -> str:
+    """dialogue_tree.json next to main.py; failing that, any .json there that has "file_triggers"."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    wanted = os.path.join(here, "dialogue_tree.json")
+    if os.path.exists(wanted):
+        return wanted
+    for name in sorted(os.listdir(here)):
+        if name.lower().endswith(".json"):
+            try:
+                with open(os.path.join(here, name), encoding="utf-8") as f:
+                    if "file_triggers" in f.read():
+                        return os.path.join(here, name)
+            except OSError:
+                pass
+    return wanted
+ 
+ 
+DIALOGUE_FILE = find_dialogue_file()
  
 TUTORIAL_PATH = ["tutorial"]
 HOME_PATH = ["home", "operator"]      # what "~" means
@@ -134,6 +153,8 @@ class VirusGame(App):
  
         self.tutorial_read = set()
         self.decrypted = set()          # encrypted files the player has already breached
+        self.pending_dialogues = []     # conversations waiting for an attack or breach to finish
+        self.pending_notice = False     # "incoming transmission" already shown for the waiting chat
         self.sprung = set()             # unsafe files that have already attacked
         self.pending_decrypt = None     # (command, absolute path) waiting on the pipeline minigame
         self.end_game_active = False
@@ -193,6 +214,13 @@ class VirusGame(App):
         # Link established: mount the player in the tutorial folder from the file tree
         self.cwd = list(TUTORIAL_PATH)
         await self.type_out_lines(self.director.advance_tutorial(4), delay=0.15)
+        problems = self.dialogue.problems()
+        if problems:  # a working dialogue file prints nothing here
+            await self.type_out_lines(["", "> [DIALOGUE FILE] conversations will not work until this is fixed:"]
+                                      + [f">   - {p}" for p in problems], delay=0.05)
+        else:
+            await self.type_out_lines(
+                [f"> [DIALOGUE] loaded {os.path.basename(DIALOGUE_FILE)}: {len(self.dialogue.triggers)} conversations ready."], delay=0.05)
         self.update_status_display()
  
     # ------------------------------------------------------------------
@@ -289,6 +317,8 @@ class VirusGame(App):
             await self.trigger_phase(10)
         elif phase == 12:
             self.schedule(ENDGAME_ATTACK_GAP, self.relaunch_endgame_attack)
+        await self.flush_pending_dialogue()
+        await self.maybe_force_story()
  
     async def relaunch_endgame_attack(self) -> None:
         if self.director.current_phase == 12 and not self.in_attack():
@@ -533,8 +563,13 @@ class VirusGame(App):
             return
  
         if self.dialogue.active:
-            await self.type_out_lines(self.dialogue.choose(raw_input), delay=0.05)
-            return
+            busy = self.in_attack() or self.pipeline.game_active
+            if not busy or CHOICE_INPUT.fullmatch(raw_input):
+                await self.type_out_lines(self.dialogue.choose(raw_input), delay=0.05)
+                await self.flush_pending_dialogue()
+                await self.maybe_force_story()
+                return
+            # an attack or breach is running: let the player's command through, the chat can wait
  
         if self.director.tutorial_step < 4 and base_command not in PRE_LINK_COMMANDS:
             await self.type_out_lines(["> [ERROR] No neural link. Type 'connect' to jack in."], delay=0.05)
@@ -855,6 +890,8 @@ class VirusGame(App):
             if mode == "open":  # only opening a file counts toward the blueprint unlock
                 await self.register_read(key)
             await self.spring_trap(name, key, node, mode)
+            await self.flush_pending_dialogue()  # after the trap, so a chat never opens over an attack
+            await self.maybe_force_story()
  
     async def spring_trap(self, name: str, key: str, node: dict, mode: str) -> None:
         """Opening a file marked `"safe": False` unleashes an attack (once per file, during free exploration)."""
@@ -889,6 +926,21 @@ class VirusGame(App):
                 "> [SYSTEM AI]: 'tree /' maps the whole mainframe. 'cd <folder>' moves you around and 'cd ..' goes up.",
             ], delay=0.05)
  
+    async def maybe_force_story(self) -> None:
+        """Safety net: 20 files read while the story is still waiting on disease.png starts the story anyway.
+        Blueprints only appear after the story, so without this the player could read everything and get nothing."""
+        if (
+            self.director.current_phase != 2
+            or len(self.dialogue.opened_files) < FILE_THRESHOLD
+            or self.game_over or self.in_attack() or self.pipeline.game_active
+            or self.dialogue.active or self.pending_dialogues
+        ):
+            return
+        await asyncio.sleep(1)
+        await self.trigger_phase(3)
+        await self.trigger_phase(4)
+        await self.trigger_phase(5)
+ 
     async def register_read(self, key: str) -> None:
         """Count a unique file toward the end-game threshold and fire any dialogue it unlocks."""
         trigger = self.dialogue.record_file_opened(key)
@@ -897,8 +949,23 @@ class VirusGame(App):
                 [f"> [ files opened: {len(self.dialogue.opened_files)}/{FILE_THRESHOLD} ]"], delay=0.05
             )
         if trigger:
-            await self.type_out_lines(self.dialogue.start_dialogue(trigger), delay=0.05)
+            self.pending_dialogues.append(trigger)
         await self.check_endgame()
+ 
+    async def flush_pending_dialogue(self) -> None:
+        """Start the next waiting conversation, but never over an attack, a breach or another chat."""
+        if not self.pending_dialogues or self.dialogue.active or self.game_over:
+            return
+        if self.in_attack() or self.pipeline.game_active:
+            if not self.pending_notice:  # say it once, so a waiting chat never looks like a missing one
+                self.pending_notice = True
+                await self.type_out_lines(["> [ incoming transmission - deal with this first ]"], delay=0.05)
+            return
+        self.pending_notice = False
+        lines = self.dialogue.start_dialogue(self.pending_dialogues.pop(0))
+        await self.type_out_lines(lines, delay=0.05)
+        if not lines:  # that trigger had no usable node: try the next one
+            await self.flush_pending_dialogue()
  
     # ------------------------------------------------------------------
     # Encrypted files (pipeline minigame)
@@ -923,6 +990,7 @@ class VirusGame(App):
             self.decrypted.add(key)
             await self.type_out_lines([f"> Decryption complete: {key}"], delay=0.05)
             await self.command_map[command]([key])
+            await self.flush_pending_dialogue()
  
     async def cmd_rotate(self, args) -> None:
         self.show(self.pipeline.rotate_pipe(args))
