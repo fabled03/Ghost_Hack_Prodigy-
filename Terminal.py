@@ -500,10 +500,9 @@ class VirusGame(App):
         return lines
  
     def defense_listing(self) -> list:
-        lines = [f"> /{self.defense.current_folder_name}/"]
+        lines = ["> YOUR FILES:"]
         for name in self.defense.home_files:
-            home = self.defense.file_folder.get(name, self.defense.current_folder_name)
-            lines.append(f">   {name}" + ("" if home == self.defense.current_folder_name else f"   (from /{home}/)"))
+            lines.append(f">   {name}   (/{self.defense.file_folder.get(name, '?')}/)")
         if self.end_game_active:
             lines += ["", "> BLUEPRINTS:"]
             for name in BLUEPRINT_FILES:
@@ -717,7 +716,7 @@ class VirusGame(App):
                 await self.type_out_lines([f"> Usage: {mode} <filename>"], delay=0.05)
             elif self.in_attack():
                 items = [(n, self.defense.file_data.get(n, {}).get("risk", "LOW")) for n in self.defense.home_files]
-                await self.type_out_lines(self.risk_list_lines(f"/{self.defense.current_folder_name}/", items), delay=0.05)
+                await self.type_out_lines(self.risk_list_lines("your files", items), delay=0.05)
             else:
                 await self.read_file("", mode)  # inspect with no file: risk levels for this folder
             return
@@ -780,6 +779,12 @@ class VirusGame(App):
             ], delay=0.05)
         await self.check_win()
  
+    @staticmethod
+    def art_lines(node: dict) -> list:
+        """The file's ASCII picture (its "ASCII" key), as extra lines after `open`."""
+        art = node.get("ASCII")
+        return [""] + str(art).strip("\n").split("\n") if art else []
+ 
     async def read_file(self, raw: str, mode: str) -> None:
         """Outside of attacks: `open` shows a file's contents (info), `inspect` shows only its risk level."""
         path = self.resolve(raw) if raw else list(self.cwd)
@@ -811,7 +816,7 @@ class VirusGame(App):
         # Story trigger: the file the whole plot hangs on
         if name == "disease.png" and self.director.current_phase == 2:
             if mode == "open":
-                await self.type_out_lines([f"> {name}: {info}"], delay=0.05)
+                await self.type_out_lines([f"> {name}: {info}"] + self.art_lines(node), delay=0.05)
             else:
                 await self.type_out_lines([f"> {name}: risk level {node.get('risk', 'LOW')}"], delay=0.05)
             await asyncio.sleep(1)
@@ -827,7 +832,7 @@ class VirusGame(App):
  
         if mode == "open":
             body = (node.get("text") or info).strip("\n").split("\n")
-            await self.type_out_lines([f"\n> {name}"] + body, delay=0.15 if node.get("ai") else 0.04)
+            await self.type_out_lines([f"\n> {name}"] + body + self.art_lines(node), delay=0.15 if node.get("ai") else 0.04)
         else:
             lines = [
                 f"> INSPECT: {name}",

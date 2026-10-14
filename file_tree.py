@@ -1,4 +1,6 @@
 # file_system.py
+from ASCII_Art import death, disease, extraction, family, haunting, infection, operation, vacation
+ 
 
 FILE_TREE = {
     "tutorial": {
@@ -66,14 +68,14 @@ manual           defense reminders
             "extension.zip": {"type": "file", "safe": True, "risk": "LOW", "info": "All realitve extensions for use of Priodigy if not already installed."},
         },
         "images": {
-            "family_photo.jpg": {"type": "file", "safe": True, "risk": "LOW", "info": "JPEG image of a family gathering."},#, "ASCII": family},
-            "vacation.png": {"type": "file", "safe": True, "risk": "LOW", "info": "PNG image of a family vacation."},#, "ASCII": vacation},
-            "disease.png": {"type": "file", "safe": False, "risk": "HIGH", "info": "I tried to hold on. I tried to fight. I tried it all. Yet they gave up on me."},#, "ASCII": disease},
-            "infection.png": {"type": "file", "safe": False, "risk": "HIGH", "info": "It spread through my brain. Maybe I can do the same to you."},#, "ASCII": infection},
-            "haunting.png": {"type": "file", "safe": False, "risk": "CRITICAL", "info": "And I will always be with you then. I won't be alone again. Together, you and me. Like a lover."},#, "ASCII": haunting},
-            "operation.png": {"type": "file", "safe": False, "risk": "CRITICAL", "info": "Don't look at that. DON'T LOOK at that. DON'T LOOK AT THAT!"},#, "ASCII": operation},
-            "extractions.png": {"type": "file", "safe": True, "risk": "LOW", "info": "Successful."},#, "ASCII": extraction},
-            "final_moments.png": {"type": "file", "safe": True, "risk": "LOW", "info": "It wasn't goodbye, because you came to say Hello."},#, "ASCII": death},
+            "family_photo.jpg": {"type": "file", "safe": True, "risk": "LOW", "info": "JPEG image of a family gathering.", "ASCII": family},
+            "vacation.png": {"type": "file", "safe": True, "risk": "LOW", "info": "PNG image of a family vacation.", "ASCII": vacation},
+            "disease.png": {"type": "file", "safe": False, "risk": "HIGH", "info": "I tried to hold on. I tried to fight. I tried it all. Yet they gave up on me.", "ASCII": disease},
+            "infection.png": {"type": "file", "safe": False, "risk": "HIGH", "info": "It spread through my brain. Maybe I can do the same to you.", "ASCII": infection},
+            "haunting.png": {"type": "file", "safe": False, "risk": "CRITICAL", "info": "And I will always be with you then. I won't be alone again. Together, you and me. Like a lover.", "ASCII": haunting},
+            "operation.png": {"type": "file", "safe": False, "risk": "CRITICAL", "info": "Don't look at that. DON'T LOOK at that. DON'T LOOK AT THAT!", "ASCII": operation},
+            "extractions.png": {"type": "file", "safe": True, "risk": "LOW", "info": "Successful.", "ASCII": extraction},
+            "final_moments.png": {"type": "file", "safe": True, "risk": "LOW", "info": "It wasn't goodbye, because you came to say Hello.", "ASCII": death},
         },
     },
     "sys": {
