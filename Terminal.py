@@ -25,7 +25,7 @@ ASCII_TITLE = r"""
 
 PROMPT = "> root@system:~# "
 TRAINING_FENCE = "> [ACCESS DENIED] Finish your training first: 'open' every file in /tutorial."
-DIALOGUE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dialogue_tree.json")
+DIALOGUE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dialogue.json")
 
 TUTORIAL_PATH = ["tutorial"]
 HOME_PATH = ["home", "operator"]      # what "~" means
@@ -203,7 +203,7 @@ class VirusGame(App):
         # Prevent double-triggering if we are already on this phase
         if self.director.current_phase == phase and phase in (10, 13):
             return
-
+        
         await self.type_out_lines(self.director.get_phase_text(phase), delay=0.1)
 
         if phase == 5:
@@ -521,7 +521,14 @@ class VirusGame(App):
             return
         self.stage.write(f"\n{PROMPT}{raw_input}")
 
-        # Only the command is case-insensitive; file names keep their case
+        # If dialogue is active, route input directly to DialogueManager choices!
+        if self.dialogue.active:
+            lines = self.dialogue.choose(raw_input)
+            await self.type_out_lines(lines, delay=0.05)
+            self.update_status_display()
+            return
+
+        # Normal command processing
         parts = raw_input.split()
         base_command, args = parts[0].lower(), parts[1:]
 
@@ -530,10 +537,6 @@ class VirusGame(App):
                 self.new_game()
             else:
                 await self.type_out_lines(["> Session ended. Type 'restart' to reconnect."], delay=0.05)
-            return
-
-        if self.dialogue.active:
-            await self.type_out_lines(self.dialogue.choose(raw_input), delay=0.05)
             return
 
         if self.director.tutorial_step < 4 and base_command not in PRE_LINK_COMMANDS:
