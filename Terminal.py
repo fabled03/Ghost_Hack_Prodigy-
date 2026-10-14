@@ -318,6 +318,7 @@ class VirusGame(App):
         elif phase == 12:
             self.schedule(ENDGAME_ATTACK_GAP, self.relaunch_endgame_attack)
         await self.flush_pending_dialogue()
+        await self.maybe_force_story()
  
     async def relaunch_endgame_attack(self) -> None:
         if self.director.current_phase == 12 and not self.in_attack():
@@ -566,6 +567,7 @@ class VirusGame(App):
             if not busy or CHOICE_INPUT.fullmatch(raw_input):
                 await self.type_out_lines(self.dialogue.choose(raw_input), delay=0.05)
                 await self.flush_pending_dialogue()
+                await self.maybe_force_story()
                 return
             # an attack or breach is running: let the player's command through, the chat can wait
  
@@ -889,6 +891,7 @@ class VirusGame(App):
                 await self.register_read(key)
             await self.spring_trap(name, key, node, mode)
             await self.flush_pending_dialogue()  # after the trap, so a chat never opens over an attack
+            await self.maybe_force_story()
  
     async def spring_trap(self, name: str, key: str, node: dict, mode: str) -> None:
         """Opening a file marked `"safe": False` unleashes an attack (once per file, during free exploration)."""
@@ -922,6 +925,21 @@ class VirusGame(App):
             await self.type_out_lines([
                 "> [SYSTEM AI]: 'tree /' maps the whole mainframe. 'cd <folder>' moves you around and 'cd ..' goes up.",
             ], delay=0.05)
+ 
+    async def maybe_force_story(self) -> None:
+        """Safety net: 20 files read while the story is still waiting on disease.png starts the story anyway.
+        Blueprints only appear after the story, so without this the player could read everything and get nothing."""
+        if (
+            self.director.current_phase != 2
+            or len(self.dialogue.opened_files) < FILE_THRESHOLD
+            or self.game_over or self.in_attack() or self.pipeline.game_active
+            or self.dialogue.active or self.pending_dialogues
+        ):
+            return
+        await asyncio.sleep(1)
+        await self.trigger_phase(3)
+        await self.trigger_phase(4)
+        await self.trigger_phase(5)
  
     async def register_read(self, key: str) -> None:
         """Count a unique file toward the end-game threshold and fire any dialogue it unlocks."""
