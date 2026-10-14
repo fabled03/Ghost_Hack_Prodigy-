@@ -1,0 +1,34 @@
+# file_system.py
+
+FILE_TREE = {
+    "home": {
+        "operator": {
+            "notes.txt": {"type": "file", "safe": True, "risk": "LOW", "info": "Reminder: Change master encryption key before Friday."},
+            "mail_cache.db": {"type": "file", "safe": True, "risk": "LOW", "info": "Local cache of encrypted communications."},
+            "session.log": {"type": "file", "safe": True, "risk": "LOW", "info": "Terminal history: last login from localhost."},
+            "driver_update.exe": {"type": "file", "safe": False, "risk": "HIGH", "info": "Suspicious binary disguised as a hardware patch."},
+        }
+        "downloads": { {},
+        }
+        "pictures": {
+            "family_photo.jpg": {"type": "file", "safe": True, "risk": "LOW", "info": "JPEG image of family gathering."},
+            "vacation.png": {"type": "file", "safe": True, "risk": "LOW", "info": "PNG image from recent trip."},
+            "malware_sample.exe": {"type": "file", "safe": False, "risk": "CRITICAL", "info": "Executable file containing known malware signature."},
+        }            
+    },
+    "sys": {
+        "kernel_log.enc": {"type": "file", "safe": True, "risk": "NONE", "info": "Log entry: unknown login from 'GHOST_7' at 03:14."},
+        "payroll.dat": {"type": "file", "safe": True, "risk": "NONE", "info": "Payroll records. Nothing unusual."},
+        "backup_final.bin": {"type": "file", "safe": False, "risk": "CRITICAL", "info": "Corrupted sector container trap."},
+        "security.enc": {"type": "file", "safe": False, "risk": "CRITICAL", "info": "Decoy text file wired to execution trap."},
+        "samantha.rogue": {"type": "file", "safe": True, "win": True, "risk": "NONE", "info": "Origin traced. The signal comes from a person, not a program."},
+        "ghost_signal.tru": {"type": "file", "safe": True, "risk": "NONE", "info": "Trusted signal from GHOST_7."}
+        "bradcast.sig": {"type": "file", "safe": True, "risk": "NONE", "info": "Encrypted broadcast signal from Esper Group."
+    },
+    "confidential": {
+        "samantha.rougue": {"type": "file", "safe": True, "risk": "MEDIUM", "info": "LOG 001: The Prodigy OS core wasn't manufactured. It was extracted from an anomalous signal in 2042."},
+        "ghost_signal.tru": {"type": "file", "safe": True, "risk": "MEDIUM", "info": "LOG 002: Operator GHOST_7 was the first test subject to achieve neural synchronization."},
+        "backdoor_protocol.sh": {"type": "file", "safe": False, "risk": "HIGH", "info": "Unsanitized shell script trap."},
+        "override_pass.hex": {"type": "file", "safe": False, "risk": "HIGH", "info": "Memory injection hex trap."},
+    }
+}

@@ -1,0 +1,105 @@
+from data.file_tree import FILE_TREE
+
+class FileSystemManager:
+    def __init__(self, app_instance):
+        self.app = app_instance
+        self.cwd = ["home", "operator"]
+        self.copied_files = set()
+        self.decoded_files = set()
+        self.scanned_files = set()  # Tracks scanned files
+        self.aggression_multiplier = 1.0
+
+    def get_current_dir_dict(self):
+        d = FILE_TREE
+        for p in self.cwd:
+            d = d[p]
+        return d
+
+    def cmd_cd(self, args) -> None:
+        if not args:
+            self.cwd = ["home", "operator"]
+            return
+        target = args[0]
+        if target == "..":
+            if len(self.cwd) > 0:
+                self.cwd.pop()
+        elif target == "/":
+            self.cwd = []
+        else:
+            current = self.get_current_dir_dict()
+            if target in current and isinstance(current[target], dict):
+                self.cwd.append(target)
+            else:
+                self.app.stage.write(f"> Directory not found: {target}")
+
+    def cmd_ls(self) -> None:
+        current = self.get_current_dir_dict()
+        path_str = "/" + "/".join(self.cwd)
+        self.app.stage.write(f"> Contents of {path_str}:")
+        for name, item in current.items():
+            if isinstance(item, dict):
+                self.app.stage.write(f">   [DIR]  {name}/")
+            else:
+                scanned_mark = " [scanned]" if name in self.scanned_files else ""
+                self.app.stage.write(f">   [FILE] {name}{scanned_mark}")
+
+    def cmd_scan_file(self, args) -> None:
+        if not args:
+            self.app.stage.write("> Usage: scan <filename>")
+            return
+        name = args[0]
+        current = self.get_current_dir_dict()
+        if name not in current or isinstance(current[name], dict):
+            self.app.stage.write(f"> File not found: {name}")
+            return
+        
+        self.scanned_files.add(name)  # Mark file as scanned
+        file_data = current[name]
+        self.app.stage.write(f"> Scanning {name}...")
+        self.app.stage.write(f"> Threat Assessment: [ RISK LEVEL: {file_data.get('risk', 'UNKNOWN')} ]")
+
+    def cmd_decode(self, args) -> None:
+        if not args:
+            self.app.stage.write("> Usage: decode <filename>")
+            return
+        name = args[0]
+        current = self.get_current_dir_dict()
+        if name not in current or isinstance(current[name], dict):
+            self.app.stage.write(f"> File not found: {name}")
+            return
+
+        file_data = current[name]
+        self.app.stage.write(f"> Decoding sector data for {name}...")
+        self.decoded_files.add(name)
+
+        if file_data["safe"]:
+            self.app.stage.write(f"> [DECODE SUCCESS] {file_data['info']}")
+            if file_data.get("win"):
+                self.app.win()
+        else:
+            self.app.stage.write(f"> [!] TRAP TRIGGERED: {name} is a contaminated payload!")
+            self.app.launch_attack()
+
+    def cmd_copy(self, args) -> None:
+        if not args:
+            self.app.stage.write("> Usage: copy <filename>")
+            return
+        name = args[0]
+        current = self.get_current_dir_dict()
+        if name not in current or isinstance(current[name], dict):
+            self.app.stage.write(f"> File not found: {name}")
+            return
+
+        # Enforce scan requirement
+        if name not in self.scanned_files:
+            self.app.stage.write(f"> [ACCESS DENIED]: You must scan {name} before exfiltrating data.")
+            return
+
+        if name in self.copied_files:
+            self.app.stage.write(f"> {name} has already been copied.")
+            return
+
+        self.copied_files.add(name)
+        self.aggression_multiplier += 0.25
+        self.app.stage.write(f"> Copied {name} to local buffer.")
+        self.app.stage.write(f"[WARNING]: Network monitor detected exfiltration! AI Aggression: {self.aggression_multiplier:.2f}x")
